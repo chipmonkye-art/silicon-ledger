@@ -1,0 +1,9 @@
+{
+  "name": "silicon-ledger",
+  "private": true,
+  "scripts": {
+    "build": "cd client && npm ci && npm run build",
+    "start": "cd server && node src/index.js",
+    "postinstall": "cd client && npm ci && cd ../server && npm ci"
+  }
+}
