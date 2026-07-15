@@ -1,0 +1,26 @@
+{
+  "name": "Silicon Ledger — Precision Accounting",
+  "short_name": "Silicon",
+  "description": "Personal finance/accounting engine — mobile-first, precision integer math, red minimalist design.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#cc3b3b",
+  "orientation": "portrait",
+  "categories": ["finance", "productivity", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false,
+  "related_applications": [],
+  "scope": "/",
+  "lang": "en",
+  "dir": "ltr",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "edge_side_panel": {},
+  "handle_links": "auto",
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
