@@ -1,43 +1,35 @@
 import { Router } from "express";
 import sql from "../db/index.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, workspaceScope } from "../middleware/auth.js";
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, workspaceScope);
 
-function computeNextOccurrence(from, intervalType, intervalValue) {
-  const d = new Date(from);
-  switch (intervalType) {
-    case "daily": d.setDate(d.getDate() + intervalValue); break;
-    case "weekly": d.setDate(d.getDate() + 7 * intervalValue); break;
-    case "monthly": d.setMonth(d.getMonth() + intervalValue); break;
-    case "yearly": d.setFullYear(d.getFullYear() + intervalValue); break;
-    case "custom_weeks": d.setDate(d.getDate() + 7 * intervalValue); break;
-  }
-  return d;
-}
+const VALID_INTERVALS = ["daily", "weekly", "monthly", "yearly", "custom"];
 
 router.get("/", async (req, res) => {
+  const { ws } = req.workspace;
   const templates = await sql`
-    SELECT rt.*, a.name AS account_name, a2.name AS to_account_name
-    FROM recurring_templates rt
+    SELECT rt.*, a.name AS account_name, a2.name AS to_account_name, c.name AS category_name
+    FROM recurring_transactions rt
     LEFT JOIN accounts a ON a.id = rt.account_id
     LEFT JOIN accounts a2 ON a2.id = rt.to_account_id
-    WHERE rt.user_id = ${req.user.userId}
-    ORDER BY rt.next_occurrence
+    LEFT JOIN categories c ON c.id = rt.category_id
+    WHERE rt.workspace_id = ${ws}
+    ORDER BY rt.start_date
   `;
 
-  const grouped = {};
   const intervalLabels = {
-    daily: (v) => v === 1 ? "Daily" : `Every ${v} days`,
-    weekly: (v) => v === 1 ? "Weekly" : `Every ${v} weeks`,
-    monthly: (v) => v === 1 ? "Monthly" : `Every ${v} months`,
-    yearly: (v) => v === 1 ? "Yearly" : `Every ${v} years`,
-    custom_weeks: (v) => `Every ${v} weeks`,
+    daily: (v) => (v === 1 ? "Daily" : `Every ${v} days`),
+    weekly: (v) => (v === 1 ? "Weekly" : `Every ${v} weeks`),
+    monthly: (v) => (v === 1 ? "Monthly" : `Every ${v} months`),
+    yearly: (v) => (v === 1 ? "Yearly" : `Every ${v} years`),
+    custom: (v) => `Every ${v || "?"} days`,
   };
 
+  const grouped = {};
   for (const t of templates) {
-    const label = intervalLabels[t.interval_type]?.(t.interval_value) || t.interval_type;
+    const label = intervalLabels[t.interval_type]?.(t.interval_days) || t.interval_type;
     if (!grouped[label]) grouped[label] = [];
     grouped[label].push(t);
   }
@@ -45,152 +37,79 @@ router.get("/", async (req, res) => {
   res.json({ templates, grouped });
 });
 
-router.post("/", async (req, res) => {
-  const { name, type, amount, account_id, to_account_id, category, description, interval_type, interval_value, next_occurrence, end_date } = req.body;
+router.get("/:id", async (req, res) => {
+  const { ws } = req.workspace;
+  const [template] = await sql`
+    SELECT rt.*, a.name AS account_name, a2.name AS to_account_name, c.name AS category_name
+    FROM recurring_transactions rt
+    LEFT JOIN accounts a ON a.id = rt.account_id
+    LEFT JOIN accounts a2 ON a2.id = rt.to_account_id
+    LEFT JOIN categories c ON c.id = rt.category_id
+    WHERE rt.id = ${req.params.id} AND rt.workspace_id = ${ws}
+  `;
+  if (!template) return res.status(404).json({ message: "Recurring template not found" });
+  res.json({ template });
+});
 
-  if (type === "transfer" && !to_account_id) {
-    return res.status(422).json({ message: "Transfer requires destination account" });
+router.post("/", async (req, res) => {
+  const { ws } = req.workspace;
+  const { account_id, to_account_id, category_id, txn_type, amount_minor, currency, description, note, interval_type, interval_days, start_date, end_date, occurrences_remaining } = req.body;
+
+  if (!account_id || !txn_type || !amount_minor || !interval_type || !start_date) {
+    return res.status(422).json({ message: "account_id, txn_type, amount_minor, interval_type, and start_date are required" });
+  }
+  if (!VALID_INTERVALS.includes(interval_type)) {
+    return res.status(422).json({ message: `Invalid interval_type. Must be one of: ${VALID_INTERVALS.join(", ")}` });
+  }
+  if (interval_type === "custom" && (!interval_days || interval_days <= 0)) {
+    return res.status(422).json({ message: "custom interval requires interval_days > 0" });
+  }
+  if (txn_type === "transfer" && !to_account_id) {
+    return res.status(422).json({ message: "Transfer requires to_account_id" });
+  }
+  if (txn_type !== "transfer" && !category_id) {
+    return res.status(422).json({ message: "category_id is required for income/expense" });
   }
 
   const [template] = await sql`
-    INSERT INTO recurring_templates (user_id, name, type, amount, account_id, to_account_id, category, description, interval_type, interval_value, next_occurrence, end_date)
-    VALUES (${req.user.userId}, ${name}, ${type}, ${Math.round(amount)}, ${account_id}, ${to_account_id || null}, ${category || null}, ${description || null}, ${interval_type}, ${interval_value || 1}, ${next_occurrence}, ${end_date || null})
+    INSERT INTO recurring_transactions (user_id, workspace_id, account_id, to_account_id, category_id, txn_type, amount_minor, currency, description, note, interval_type, interval_days, start_date, end_date, occurrences_remaining)
+    VALUES (${req.user.userId}, ${ws}, ${account_id}, ${to_account_id || null}, ${category_id || null}, ${txn_type}, ${Math.round(amount_minor)}, ${currency || "USD"}, ${description || ""}, ${note || ""}, ${interval_type}, ${interval_type === "custom" ? interval_days : null}, ${start_date}, ${end_date || null}, ${occurrences_remaining || null})
     RETURNING *
   `;
   res.status(201).json({ template });
 });
 
 router.put("/:id", async (req, res) => {
-  const { name, type, amount, account_id, category, description, interval_type, interval_value, next_occurrence, is_active } = req.body;
+  const { ws } = req.workspace;
+  const { amount_minor, description, category_id, account_id, to_account_id, interval_type, interval_days, end_date, occurrences_remaining, is_active } = req.body;
+
   const [template] = await sql`
-    UPDATE recurring_templates SET
-      name = COALESCE(${name}, name),
-      amount = COALESCE(${amount != null ? Math.round(amount) : null}, amount),
-      account_id = COALESCE(${account_id}, account_id),
-      category = COALESCE(${category}, category),
+    UPDATE recurring_transactions SET
+      amount_minor = COALESCE(${amount_minor != null ? Math.round(amount_minor) : null}, amount_minor),
       description = COALESCE(${description}, description),
+      category_id = COALESCE(${category_id}, category_id),
+      account_id = COALESCE(${account_id}, account_id),
+      to_account_id = COALESCE(${to_account_id}, to_account_id),
       interval_type = COALESCE(${interval_type}, interval_type),
-      interval_value = COALESCE(${interval_value}, interval_value),
-      next_occurrence = COALESCE(${next_occurrence}, next_occurrence),
-      is_active = COALESCE(${is_active != null ? is_active : null}, is_active),
-      updated_at = now()
-    WHERE id = ${req.params.id} AND user_id = ${req.user.userId}
+      interval_days = COALESCE(${interval_type === "custom" ? interval_days : null}, interval_days),
+      end_date = COALESCE(${end_date}, end_date),
+      occurrences_remaining = COALESCE(${occurrences_remaining != null ? occurrences_remaining : null}, occurrences_remaining),
+      is_active = COALESCE(${is_active != null ? is_active : null}, is_active)
+    WHERE id = ${req.params.id} AND workspace_id = ${ws}
     RETURNING *
   `;
-  if (!template) return res.status(404).json({ message: "Template not found" });
+  if (!template) return res.status(404).json({ message: "Recurring template not found" });
   res.json({ template });
 });
 
 router.delete("/:id", async (req, res) => {
+  const { ws } = req.workspace;
   const [template] = await sql`
-    DELETE FROM recurring_templates WHERE id = ${req.params.id} AND user_id = ${req.user.userId}
+    DELETE FROM recurring_transactions WHERE id = ${req.params.id} AND workspace_id = ${ws}
     RETURNING id
   `;
-  if (!template) return res.status(404).json({ message: "Template not found" });
+  if (!template) return res.status(404).json({ message: "Recurring template not found" });
   res.status(204).end();
-});
-
-router.post("/:id/generate", async (req, res) => {
-  const { count = 1 } = req.body;
-  const [template] = await sql`
-    SELECT * FROM recurring_templates WHERE id = ${req.params.id} AND user_id = ${req.user.userId}
-  `;
-  if (!template) return res.status(404).json({ message: "Template not found" });
-
-  const generated = [];
-  let currentDate = new Date(template.next_occurrence);
-  const endLimit = template.end_date ? new Date(template.end_date) : new Date(currentDate.getTime() + 365 * 3 * 24 * 60 * 60 * 1000);
-
-  for (let i = 0; i < count && currentDate <= endLimit; i++) {
-    const dateStr = currentDate.toISOString().slice(0, 10);
-
-    const [existing] = await sql`
-      SELECT bt.id FROM bulk_generated_transactions bt
-      JOIN transactions t ON t.id = bt.transaction_id
-      WHERE bt.template_id = ${template.id} AND t.date = ${dateStr}
-      LIMIT 1
-    `;
-    if (existing) {
-      currentDate = computeNextOccurrence(currentDate, template.interval_type, template.interval_value);
-      continue;
-    }
-
-    const [txn] = await sql`
-      INSERT INTO transactions (account_id, to_account_id, type, amount, description, category, date, is_staged, created_by)
-      VALUES (${template.account_id}, ${template.to_account_id || null}, ${template.type}, ${template.amount}, ${template.description || template.name}, ${template.category || null}, ${dateStr}, false, ${req.user.userId})
-      RETURNING *
-    `;
-
-    await sql`
-      INSERT INTO bulk_generated_transactions (template_id, transaction_id, generated_date)
-      VALUES (${template.id}, ${txn.id}, ${dateStr})
-    `;
-
-    generated.push(txn);
-    currentDate = computeNextOccurrence(currentDate, template.interval_type, template.interval_value);
-  }
-
-  await sql`
-    UPDATE recurring_templates SET next_occurrence = ${currentDate.toISOString().slice(0, 10)}, updated_at = now()
-    WHERE id = ${template.id}
-  `;
-
-  res.json({ generated, next_occurrence: currentDate.toISOString().slice(0, 10) });
-});
-
-router.post("/bulk-generate", async (req, res) => {
-  const { years = 1 } = req.body;
-  const templates = await sql`
-    SELECT * FROM recurring_templates
-    WHERE user_id = ${req.user.userId} AND is_active = true
-  `;
-
-  const allGenerated = [];
-  for (const t of templates) {
-    let count = 0;
-    let currentDate = new Date(t.next_occurrence);
-    const endLimit = t.end_date
-      ? new Date(t.end_date)
-      : new Date(currentDate.getTime() + years * 365 * 24 * 60 * 60 * 1000);
-
-    while (currentDate <= endLimit) {
-      const dateStr = currentDate.toISOString().slice(0, 10);
-
-      const [existing] = await sql`
-        SELECT bt.id FROM bulk_generated_transactions bt
-        JOIN transactions t ON t.id = bt.transaction_id
-        WHERE bt.template_id = ${t.id} AND t.date = ${dateStr}
-        LIMIT 1
-      `;
-
-      if (!existing) {
-        const [txn] = await sql`
-          INSERT INTO transactions (account_id, to_account_id, type, amount, description, category, date, is_staged, created_by)
-          VALUES (${t.account_id}, ${t.to_account_id || null}, ${t.type}, ${t.amount}, ${t.description || t.name}, ${t.category || null}, ${dateStr}, false, ${req.user.userId})
-          RETURNING *
-        `;
-
-        await sql`
-          INSERT INTO bulk_generated_transactions (template_id, transaction_id, generated_date)
-          VALUES (${t.id}, ${txn.id}, ${dateStr})
-        `;
-
-        allGenerated.push(txn);
-        count++;
-      }
-
-      currentDate = computeNextOccurrence(currentDate, t.interval_type, t.interval_value);
-    }
-
-    if (count > 0) {
-      await sql`
-        UPDATE recurring_templates SET next_occurrence = ${currentDate.toISOString().slice(0, 10)}, updated_at = now()
-        WHERE id = ${t.id}
-      `;
-    }
-  }
-
-  res.json({ generated: allGenerated, count: allGenerated.length });
 });
 
 export default router;

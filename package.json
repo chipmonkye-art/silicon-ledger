@@ -2,8 +2,20 @@
   "name": "silicon-ledger",
   "private": true,
   "scripts": {
-    "build": "cd client && npm ci && npm run build",
-    "start": "cd server && node src/index.js",
-    "postinstall": "cd client && npm ci && cd ../server && npm ci"
+    "deploy": "npx vercel --prod",
+    "deploy:preview": "npx vercel",
+    "dev": "node server/src/index.js",
+    "build": "cd silicon-ledger && npm run build",
+    "start": "node server/src/index.js",
+    "postinstall": "cd server && npm install && cd ../silicon-ledger && npm install",
+    "prepare": "husky",
+    "vercel-build": "cd server && npm install && cd ../silicon-ledger && npm install && npx vite build"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.5"
+  },
+  "devDependencies": {
+    "vercel": "^41.0.0"
   }
 }

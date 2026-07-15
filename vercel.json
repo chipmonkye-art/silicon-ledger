@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/index.js": {
+      "memory": 512,
+      "maxDuration": 30
+    }
+  },
+  "builds": [
+    {
+      "src": "silicon-ledger/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api" }
+  ]
+}

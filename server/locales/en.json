@@ -1,0 +1,86 @@
+{
+  "errors": {
+    "not_found": "Not found",
+    "unauthorized": "Unauthorized",
+    "validation": "Validation error",
+    "server_error": "Internal server error",
+    "rate_limited": "Too many requests. Please slow down.",
+    "session_expired": "Your session has expired. Please sign in again.",
+    "session_revoked": "Your session was revoked from another device.",
+    "credit_limit_exceeded": "Credit limit exceeded. Requires manager override.",
+    "account_not_found": "Account not found",
+    "workspace_required": "Workspace ID is required"
+  },
+  "transactions": {
+    "created": "Transaction created",
+    "updated": "Transaction updated",
+    "deleted": "Transaction deleted",
+    "approved": "Transaction approved and posted to ledger",
+    "rejected": "Transaction rejected: {note}",
+    "resubmitted": "Transaction resubmitted for approval",
+    "staged": "Pending review",
+    "needs_correction": "Needs correction",
+    "bulk_approved": "{count} transactions approved",
+    "bulk_rejected": "{count} transactions rejected",
+    "payment_matched": "Payment matched to invoice"
+  },
+  "accounts": {
+    "created": "Account created",
+    "updated": "Account updated",
+    "archived": "Account archived",
+    "credit_limit_set": "Credit limit set to {limit}",
+    "credit_status": "Credit usage: {pct}% of {limit}"
+  },
+  "auth": {
+    "login_success": "Signed in successfully",
+    "logout_success": "Signed out successfully",
+    "session_revoked": "Session revoked. Other devices signed out.",
+    "biometric_registered": "Biometric key registered successfully",
+    "biometric_verified": "Biometric verification successful",
+    "token_refreshed": "Access token refreshed"
+  },
+  "reports": {
+    "generated": "Report generated",
+    "aging": "Aging Analysis",
+    "cashflow": "Cash Flow Projection",
+    "cashflow_expected": "Expected Case",
+    "cashflow_worst": "Worst Case",
+    "cashflow_best": "Best Case",
+    "monthly_trend": "Monthly Trends",
+    "category_breakdown": "Category Breakdown"
+  },
+  "workspace": {
+    "created": "Workspace created successfully",
+    "invite_sent": "Invite code generated",
+    "member_added": "Member added to workspace",
+    "member_removed": "Member removed from workspace",
+    "logo_updated": "Workspace logo updated"
+  },
+  "credit": {
+    "check_ok": "Credit check passed",
+    "soft_warning": "Soft credit limit warning — {pct}% used",
+    "hard_blocked": "Hard credit limit reached — transaction blocked",
+    "override_recorded": "Credit override recorded"
+  },
+  "sync": {
+    "pushed": "{count} mutations synced",
+    "pulled": "{count} changes received",
+    "conflicts": "{count} conflicts detected — review required",
+    "idempotent_skipped": "Duplicate mutation skipped"
+  },
+  "common": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "success": "Success",
+    "error": "Error",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "search": "Search transactions...",
+    "delete": "Delete",
+    "edit": "Edit",
+    "save": "Save",
+    "close": "Close",
+    "retry": "Retry",
+    "offline": "You are offline. Changes will sync when connected."
+  }
+}

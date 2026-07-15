@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-type-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: silicon-ledger/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: silicon-ledger
+
+      - name: Lint
+        run: npx eslint . --ext .ts,.tsx
+        working-directory: silicon-ledger
+
+      - name: Type check
+        run: npx tsc --noEmit
+        working-directory: silicon-ledger
+
+      - name: Test with coverage
+        run: npx vitest run --coverage
+        working-directory: silicon-ledger
+
+      - name: Build
+        run: npm run build
+        working-directory: silicon-ledger
+
+  server-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: server
+
+      - name: Check syntax
+        run: node -c src/index.js
+        working-directory: server
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: silicon-ledger/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: silicon-ledger
+
+      - name: Audit
+        run: npm audit --audit-level=high
+        working-directory: silicon-ledger

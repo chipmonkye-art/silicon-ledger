@@ -1,47 +1,36 @@
 import { Router } from "express";
 import sql from "../db/index.js";
-import { authMiddleware } from "../middleware/auth.js";
+import { authMiddleware, workspaceScope } from "../middleware/auth.js";
 
 const router = Router();
-router.use(authMiddleware);
+router.use(authMiddleware, workspaceScope);
 
 router.get("/", async (req, res) => {
-  const { q, type, category, limit = 20 } = req.query;
+  const { ws } = req.workspace;
+  const { q, txn_type, category_id, limit = 20 } = req.query;
   const searchTerm = q ? `%${q}%` : null;
 
-  let txnQuery = sql`
-    SELECT t.*, a.name AS account_name, a2.name AS to_account_name,
-      'transaction' AS result_type, p.name AS project_name
+  let query = sql`
+    SELECT t.*, a.name AS account_name, a2.name AS to_account_name, c.name AS category_name
     FROM transactions t
     LEFT JOIN accounts a ON a.id = t.account_id
     LEFT JOIN accounts a2 ON a2.id = t.to_account_id
-    LEFT JOIN projects p ON p.id = t.project_id
-    WHERE t.created_by = ${req.user.userId}
+    LEFT JOIN categories c ON c.id = t.category_id
+    WHERE t.workspace_id = ${ws}
   `;
   if (searchTerm) {
-    txnQuery = sql`${txnQuery} AND (t.description ILIKE ${searchTerm} OR t.category ILIKE ${searchTerm})`;
+    query = sql`${query} AND (t.description ILIKE ${searchTerm} OR t.note ILIKE ${searchTerm})`;
   }
-  if (type && type !== "all") {
-    txnQuery = sql`${txnQuery} AND t.type = ${type}`;
+  if (txn_type && txn_type !== "all") {
+    query = sql`${query} AND t.txn_type = ${txn_type}`;
   }
-  if (category) {
-    txnQuery = sql`${txnQuery} AND t.category ILIKE ${`%${category}%`}`;
+  if (category_id) {
+    query = sql`${query} AND t.category_id = ${category_id}`;
   }
-  txnQuery = sql`${txnQuery} ORDER BY t.date DESC LIMIT ${limit}`;
+  query = sql`${query} ORDER BY t.occurred_on DESC LIMIT ${limit}`;
 
-  const transactions = await txnQuery;
-
-  const projectQuery = searchTerm
-    ? sql`
-        SELECT *, 'project' AS result_type FROM projects
-        WHERE created_by = ${req.user.userId} AND name ILIKE ${searchTerm}
-        LIMIT 5
-      `
-    : sql`SELECT *, 'project' AS result_type FROM projects WHERE created_by = ${req.user.userId} LIMIT 0`;
-
-  const projects = await projectQuery;
-
-  res.json({ results: [...transactions, ...projects] });
+  const transactions = await query;
+  res.json({ results: transactions });
 });
 
 export default router;

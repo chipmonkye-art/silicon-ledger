@@ -1,0 +1,46 @@
+{
+  "errors": {
+    "not_found": "No encontrado",
+    "unauthorized": "No autorizado",
+    "validation": "Error de validación",
+    "server_error": "Error interno del servidor",
+    "rate_limited": "Demasiadas solicitudes. Por favor, reduzca la velocidad.",
+    "session_expired": "Su sesión ha expirado. Inicie sesión nuevamente.",
+    "credit_limit_exceeded": "Límite de crédito excedido. Requiere autorización del gerente.",
+    "workspace_required": "Se requiere ID del espacio de trabajo"
+  },
+  "transactions": {
+    "created": "Transacción creada",
+    "updated": "Transacción actualizada",
+    "approved": "Transacción aprobada y contabilizada",
+    "rejected": "Transacción rechazada: {note}",
+    "staged": "Pendiente de revisión",
+    "needs_correction": "Necesita corrección"
+  },
+  "accounts": {
+    "created": "Cuenta creada",
+    "credit_limit_set": "Límite de crédito establecido en {limit}"
+  },
+  "auth": {
+    "login_success": "Sesión iniciada correctamente",
+    "biometric_registered": "Clave biométrica registrada"
+  },
+  "reports": {
+    "aging": "Análisis de antigüedad",
+    "cashflow": "Proyección de flujo de efectivo"
+  },
+  "workspace": {
+    "created": "Espacio de trabajo creado",
+    "invite_sent": "Código de invitación generado"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "saving": "Guardando...",
+    "success": "Éxito",
+    "error": "Error",
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "search": "Buscar transacciones...",
+    "offline": "Está desconectado. Los cambios se sincronizarán cuando se conecte."
+  }
+}

@@ -4,14 +4,27 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.js\"",
+    "format:check": "prettier --check \"src/**/*.js\"",
+    "audit": "npm audit --audit-level=high"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "cors": "^2.8.5",
-    "jsonwebtoken": "^9.0.0",
     "bcryptjs": "^2.4.3",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "jose": "^6.2.3",
+    "jsonwebtoken": "^9.0.0",
+    "multer": "^1.4.5-lts.1",
+    "pdf-lib": "^1.17.1",
     "postgres": "^3.4.0",
-    "multer": "^1.4.5-lts.1"
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "prettier": "^3.9.5"
   }
 }
