@@ -1,21 +1,15 @@
 {
-  "name": "silicon-ledger",
+  "name": "silicon-accounting-v2",
   "private": true,
   "scripts": {
-    "deploy": "npx vercel --prod",
-    "deploy:preview": "npx vercel",
-    "dev": "node server/src/index.js",
-    "build": "cd silicon-ledger && npm run build",
-    "start": "node server/src/index.js",
-    "postinstall": "cd server && npm install && cd ../silicon-ledger && npm install",
-    "prepare": "husky",
-    "vercel-build": "cd server && npm install && cd ../silicon-ledger && npm install && npx vite build"
+    "build": "cd silicon-accounting-v2 && npm install --omit=dev && npm run build && npx prisma generate",
+    "start": "cd silicon-accounting-v2 && node dist/index.js",
+    "postinstall": "cd silicon-accounting-v2 && npm install"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.12.3",
-    "@supabase/supabase-js": "^2.110.5"
-  },
-  "devDependencies": {
-    "vercel": "^41.0.0"
+    "@prisma/client": "^5.22.0",
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "jsonwebtoken": "^9.0.2"
   }
 }
