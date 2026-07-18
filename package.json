@@ -2,7 +2,7 @@
   "name": "silicon-accounting-v2",
   "private": true,
   "scripts": {
-    "build": "cd silicon-accounting-v2 && npm install --omit=dev && npm run build && npx prisma generate",
+    "build": "cd silicon-accounting-v2 && npm install && npm run build && npx prisma generate",
     "start": "cd silicon-accounting-v2 && node dist/index.js",
     "postinstall": "cd silicon-accounting-v2 && npm install"
   },
