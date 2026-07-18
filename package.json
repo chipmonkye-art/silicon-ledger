@@ -2,14 +2,7 @@
   "name": "silicon-accounting-v2",
   "private": true,
   "scripts": {
-    "build": "cd silicon-accounting-v2 && npm install && npm run build && npx prisma generate",
-    "start": "cd silicon-accounting-v2 && node dist/index.js",
-    "postinstall": "cd silicon-accounting-v2 && npm install"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.22.0",
-    "express": "^4.21.0",
-    "cors": "^2.8.5",
-    "jsonwebtoken": "^9.0.2"
+    "build": "cd silicon-accounting-v2 && npm install && npm run build && npx prisma generate && npx prisma db push --accept-data-loss",
+    "start": "cd silicon-accounting-v2 && node dist/index.js"
   }
 }

@@ -2,7 +2,7 @@ services:
   - type: web
     name: silicon-accounting-v2
     env: node
-    buildCommand: npm install && npm run build && npx prisma db push --accept-data-loss
+    buildCommand: npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
