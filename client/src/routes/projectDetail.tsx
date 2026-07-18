@@ -1,4 +1,4 @@
-import { useParams, Link } from "@tanstack/react-router";
+import { useMatch, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,7 +17,7 @@ const statusColor: Record<string, "warning" | "success" | "secondary" | "default
 };
 
 export default function ProjectDetail() {
-  const { id } = useParams();
+  const { id } = useMatch({ from: "/auth/projects/$id" })!.params;
   const { openSheet } = useTransactionSheet();
 
   const { data: projectData, isLoading: projectLoading } = useQuery({

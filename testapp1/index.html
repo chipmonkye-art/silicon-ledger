@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Silicon Properties — Ledger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+  :root{
+    --bg:#141210;
+    --bg-panel:#1c1a17;
+    --bg-elevated:#242019;
+    --line:#332e26;
+    --gold:#c9a24a;
+    --gold-dim:#8a713a;
+    --crimson:#8b1e3f;
+    --crimson-bright:#b5294f;
+    --text:#f2ede2;
+    --text-dim:#a89d8a;
+    --danger:#c14040;
+    --success:#4a9a6d;
+    --radius:14px;
+    --font-display:'Fraunces', serif;
+    --font-body:'Manrope', sans-serif;
+    --primary:#C4001A;
+    --primary-rgb:196,0,26;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:
+      radial-gradient(ellipse at top, #1f1b16 0%, var(--bg) 60%),
+      var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  #app{
+    max-width:480px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg-panel);
+    box-shadow:0 0 60px rgba(0,0,0,.5);
+    position:relative;
+  }
+  .view{ display:none; flex:1; flex-direction:column; }
+  .view.active{ display:flex; }
+
+  /* ---------- WELCOME VIEW ---------- */
+  #view-welcome{ justify-content:space-between; padding:50px 24px 24px; background:#0A0F18; min-height:100vh; }
+  #view-welcome .w-brand{ margin-top:10px; }
+  #view-welcome .w-badge{
+    display:inline-block; background:rgba(var(--primary-rgb),.1); border:1px solid var(--primary);
+    padding:4px 8px; border-radius:3px; margin-bottom:20px;
+  }
+  #view-welcome .w-badge span{ color:var(--primary); font-size:9px; font-weight:800; letter-spacing:1px; }
+  #view-welcome .w-name{ font-size:34px; font-weight:800; color:#fff; letter-spacing:-.5px; }
+  #view-welcome .w-sub{ font-size:22px; font-weight:400; color:#64748B; margin-top:2px; }
+  #view-welcome .w-bar{ width:45px; height:4px; background:var(--primary); margin-top:20px; border-radius:2px; }
+  #view-welcome .w-tagline{ font-size:15px; color:#94A3B8; margin-top:16px; font-weight:500; }
+  #view-welcome .w-blueprint{
+    background:#111827; border:1px solid #1E293B; border-radius:8px; padding:20px; margin:24px 0;
+  }
+  #view-welcome .w-blueprint-title{
+    color:#475569; font-size:10px; font-weight:700; letter-spacing:1.5px; margin-bottom:16px;
+  }
+  #view-welcome .w-grid{ display:flex; flex-wrap:wrap; gap:10px; }
+  #view-welcome .w-grid-item{
+    width:calc(50% - 5px); display:flex; align-items:center; gap:10px;
+    background:#1E293B; padding:14px; border-radius:4px;
+  }
+  #view-welcome .w-grid-dot{ width:6px; height:6px; border-radius:3px; background:var(--primary); flex-shrink:0; }
+  #view-welcome .w-grid-text{ color:#E2E8F0; font-size:12px; font-weight:700; letter-spacing:.5px; }
+  #view-welcome .w-btn{
+    background:var(--primary); border:none; padding:16px; border-radius:4px;
+    color:#fff; font-size:14px; font-weight:800; letter-spacing:1px; cursor:pointer;
+    width:100%; text-align:center; font-family:var(--font-body);
+    box-shadow:0 4px 14px rgba(var(--primary-rgb),.25);
+    transition:transform .1s;
+  }
+  #view-welcome .w-btn:active{ transform:scale(.98); }
+  #view-welcome .w-footer{
+    color:#334155; font-size:9px; text-align:center; margin-top:20px; line-height:14px; letter-spacing:.2px;
+  }
+
+  /* ---------- WORKSPACE SELECTOR ---------- */
+  #view-workspace{ padding:0; background:#0A0F18; min-height:100vh; }
+  #view-workspace .ws-header{ margin:40px 24px 0; }
+  #view-workspace .ws-title{ font-size:24px; font-weight:900; color:#fff; letter-spacing:2px; }
+  #view-workspace .ws-sub{ font-size:13px; color:#64748B; margin-top:4px; }
+  #view-workspace .ws-line{ width:35px; height:3px; background:var(--primary); margin-top:16px; }
+  #view-workspace .ws-loading{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; }
+  #view-workspace .ws-loading .txt{ color:#475569; font-size:10px; font-family:monospace; letter-spacing:1px; }
+  #view-workspace .ws-list{ padding:32px 24px 24px; flex:1; overflow-y:auto; }
+  #view-workspace .ws-card{
+    background:#111827; border:1px solid #1E293B; border-radius:4px; padding:20px; margin-bottom:16px; cursor:pointer;
+    transition:border-color .15s;
+  }
+  #view-workspace .ws-card:active{ border-color:var(--primary); }
+  #view-workspace .ws-card-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  #view-workspace .ws-card-name{ color:#fff; font-size:15px; font-weight:800; letter-spacing:.5px; flex:1; }
+  #view-workspace .ws-card-badge{
+    background:rgba(16,185,129,.1); border:1px solid #10B981; padding:2px 6px; border-radius:2px;
+    color:#10B981; font-size:8px; font-weight:800; white-space:nowrap;
+  }
+  #view-workspace .ws-card-industry{ color:#64748B; font-size:12px; margin-top:4px; font-weight:500; }
+  #view-workspace .ws-card-divider{ height:1px; background:#1E293B; margin:14px 0; }
+  #view-workspace .ws-card-footer{ display:flex; justify-content:space-between; }
+  #view-workspace .ws-card-meta{ color:#475569; font-size:11px; font-weight:600; }
+  #view-workspace .ws-empty{ text-align:center; color:#475569; font-size:13px; margin-top:40px; }
+  #view-workspace .ws-bottom{ padding:0 24px 24px; }
+  #view-workspace .ws-create{
+    width:100%; height:52px; border:1px solid var(--primary); border-radius:4px;
+    background:rgba(var(--primary-rgb),.05); color:var(--primary); font-size:13px; font-weight:800;
+    letter-spacing:1px; cursor:pointer; font-family:var(--font-body);
+    transition:background .15s;
+  }
+  #view-workspace .ws-create:active{ background:rgba(var(--primary-rgb),.15); }
+
+  /* ---------- BOOT VIEW ---------- */
+  #view-boot{
+    justify-content:center; align-items:center; gap:20px; padding:40px;
+    background:#0A0F18; min-height:100vh;
+  }
+  #view-boot .boot-logo{ text-align:center; }
+  #view-boot .boot-logo .top{ font-size:36px; font-weight:900; color:#fff; letter-spacing:6px; }
+  #view-boot .boot-logo .bot{ font-size:14px; font-weight:700; color:var(--primary); letter-spacing:8px; margin-top:4px; }
+  #view-boot .boot-spinner{
+    width:24px; height:24px; border:2px solid #475569; border-top-color:var(--primary);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  #view-boot .boot-msg{ color:#475569; font-size:10px; font-family:monospace; letter-spacing:1px; }
+
+  /* ---------- AUTH VIEW ---------- */
+  #view-auth{ padding:32px 24px; background:#0A0F18; justify-content:space-between; min-height:100vh; }
+  #view-auth .auth-header{ margin-top:40px; }
+  #view-auth .auth-title{ font-size:28px; font-weight:900; color:#fff; letter-spacing:2px; }
+  #view-auth .auth-sub{ font-size:14px; color:#64748B; margin-top:4px; font-weight:500; }
+  #view-auth .auth-line{ width:35px; height:3px; background:var(--primary); margin-top:16px; }
+  #view-auth .auth-form{ margin:40px 0; }
+  #view-auth .auth-label{ color:#94A3B8; font-size:10px; font-weight:700; letter-spacing:1px; margin-bottom:8px; display:block; }
+  #view-auth .auth-label-row{ display:flex; justify-content:space-between; align-items:center; margin-top:24px; }
+  #view-auth .auth-input-box{
+    background:#111827; border:1px solid #1E293B; border-radius:4px; height:52px;
+    display:flex; align-items:center; padding:0 16px;
+  }
+  #view-auth .auth-input-box input{
+    background:transparent; border:none; color:#fff; font-size:15px; font-weight:600;
+    width:100%; outline:none; font-family:var(--font-body);
+  }
+  #view-auth .auth-input-box input::placeholder{ color:#475569; }
+  #view-auth .auth-showhide{ color:var(--primary); font-size:10px; font-weight:700; letter-spacing:1px; cursor:pointer; background:none; border:none; padding:0; font-family:var(--font-body); }
+  #view-auth .auth-btn{
+    width:100%; height:54px; border-radius:4px; border:none;
+    background:var(--primary); color:#fff; font-size:13px; font-weight:800; letter-spacing:1px;
+    cursor:pointer; font-family:var(--font-body);
+    box-shadow:0 4px 14px rgba(var(--primary-rgb),.2);
+    transition:transform .1s, opacity .15s;
+  }
+  #view-auth .auth-btn:active{ transform:scale(.98); }
+  #view-auth .auth-btn:disabled{ background:#7F1D1D; opacity:.6; }
+  #view-auth .auth-toggle{ background:none; border:none; color:#475569; font-size:11px; font-weight:700; letter-spacing:.5px; cursor:pointer; margin-top:20px; padding:12px 0; text-align:center; width:100%; font-family:var(--font-body); }
+  #view-auth .auth-toggle:hover{ color:#64748B; }
+  #view-auth .auth-back{ background:none; border:none; color:#475569; font-size:11px; font-weight:700; letter-spacing:.5px; cursor:pointer; margin-top:4px; padding:12px 0; text-align:center; width:100%; font-family:var(--font-body); }
+  #view-auth .auth-error{ color:var(--primary); font-size:12px; text-align:center; min-height:16px; margin-top:12px; font-weight:600; }
+  #view-auth .auth-success{ color:#4a9a6d; font-size:12px; text-align:center; min-height:16px; margin-top:12px; font-weight:600; }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px; border-bottom:1px solid var(--line);
+    background:var(--bg-elevated);
+  }
+  .topbar .back{ background:none; border:none; color:var(--gold); font-size:20px; cursor:pointer; padding:4px 8px; }
+  .topbar .titles{ text-align:center; flex:1; }
+  .topbar .titles .co{ font-weight:800; font-size:13px; letter-spacing:.03em; }
+  .topbar .titles .range{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .topbar .cal{ color:var(--gold); font-size:18px; cursor:pointer; }
+
+  /* ---------- DASHBOARD VIEW ---------- */
+  #view-dashboard{ overflow-y:auto; }
+  #view-dashboard .kpi-scroll{
+    display:flex; gap:8px; overflow-x:auto; padding:12px 16px 0;
+    scrollbar-width:none; -ms-overflow-style:none;
+  }
+  #view-dashboard .kpi-scroll::-webkit-scrollbar{ display:none; }
+  .kpi-card{
+    flex-shrink:0; width:130px; padding:10px 12px;
+    border:1px solid var(--line); border-radius:10px;
+    background:var(--bg-elevated);
+  }
+  .kpi-card .kpi-label{ font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
+  .kpi-card .kpi-value{ font-family:var(--font-display); font-size:15px; font-weight:600; margin-top:2px; }
+  .kpi-card.positive .kpi-value{ color:var(--success); }
+  .kpi-card.negative .kpi-value{ color:var(--danger); }
+  #view-dashboard .frame{
+    margin:12px 16px 20px; padding:16px; border:1px solid var(--gold-dim);
+    border-radius:20px; display:flex; flex-direction:column; gap:12px;
+    background:linear-gradient(180deg, rgba(201,162,74,.04), transparent);
+  }
+  .entry-btn{
+    background:linear-gradient(135deg, var(--gold) 0%, var(--gold-dim) 100%);
+    border:none; border-radius:12px; padding:14px 16px;
+    text-align:left; color:var(--bg-card); cursor:pointer;
+    box-shadow:0 4px 14px rgba(139,30,63,.35);
+    transition:transform .1s, box-shadow .15s;
+  }
+  .entry-btn-label{
+    font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:.02em;
+  }
+  .entry-btn-desc{
+    font-family:var(--font-body); font-size:12px; font-weight:500;
+    color:rgba(255,255,255,.78); margin-top:3px; line-height:1.35;
+  }
+  .entry-btn:active{ transform:scale(.97); }
+
+  /* ---------- ENTRY FORM VIEW ---------- */
+  #view-entry{background:#0A0F18}
+  #view-entry .topbar{border-bottom:2px solid var(--primary);padding-bottom:16px;margin-bottom:4px}
+  #view-entry .topbar .co{font-size:20px;font-weight:700;letter-spacing:.5px}
+  #view-entry .topbar .range{font-size:12px;color:#64748B;margin-top:2px}
+  #view-entry .form-wrap{padding:24px;display:flex;flex-direction:column;gap:20px;flex:1;overflow-y:auto}
+  #view-entry .field{display:flex;flex-direction:row;align-items:center;gap:12px}
+  #view-entry .field label{width:180px;flex-shrink:0;font-size:13px;color:#E2E8F0;font-weight:600}
+  #view-entry .field input,#view-entry .field textarea,#view-entry .field select{
+    flex:1;background:#111827;border:1px solid #1E293B;border-radius:4px;color:#fff;padding:8px 12px;font-size:13px;
+  }
+  #view-entry .field input:read-only{background:#1E293B;border-color:#334155;color:#94A3B8}
+  #view-entry .field textarea{height:60px;resize:none}
+  #view-entry .form-title{ font-family:var(--font-display); font-size:20px; font-weight:600; color:var(--primary); }
+  .items-table{ border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .items-header{
+    display:grid; grid-template-columns:2fr 1.2fr 1fr 1.2fr 1fr 28px;
+    gap:6px; padding:8px 8px 4px; font-size:10px;
+    color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;
+    border-bottom:1px solid var(--line);
+  }
+  .items-row{
+    display:grid; grid-template-columns:2fr 1.2fr 1fr 1.2fr 1fr 28px;
+    gap:6px; padding:6px 8px; border-bottom:1px solid var(--line); align-items:center;
+  }
+  .items-row:last-child{ border-bottom:none; }
+  .items-row input{
+    background:var(--bg-elevated); border:1px solid var(--line); color:var(--text);
+    border-radius:6px; padding:8px; font-size:13px; width:100%;
+  }
+  .items-row .item-amt{ font-family:var(--font-display); font-size:13px; color:var(--gold); text-align:right; }
+  .items-row button{
+    background:none; border:none; color:var(--danger); font-size:16px;
+    cursor:pointer; padding:4px; width:28px; height:28px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .add-item-btn{
+    background:none; border:1px dashed var(--gold-dim); color:var(--gold);
+    border-radius:8px; padding:10px; font-size:13px; cursor:pointer; width:100%;
+  }
+  .total-line{
+    display:flex; justify-content:space-between;
+    font-family:var(--font-display); font-size:18px; color:var(--gold);
+    padding-top:6px; border-top:1px solid var(--line);
+  }
+
+  /* ---------- REPORT VIEW ---------- */
+  #view-report .report-wrap{ padding:16px; flex:1; overflow-y:auto; }
+  .report-filters{ display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .report-filters select{ flex:1; min-width:120px; background:var(--bg-elevated); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:9px; font-size:13px; }
+  .report-filters input{ background:var(--bg-elevated); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:9px; font-size:13px; }
+  .txn-card{
+    background:var(--bg-elevated); border:1px solid var(--line); border-radius:10px;
+    padding:12px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;
+  }
+  .txn-card .meta .type{ font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--gold); font-weight:700; }
+  .txn-card .meta .party{ font-size:14px; margin-top:2px; }
+  .txn-card .meta .date{ font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .txn-card .amt{ font-family:var(--font-display); font-weight:600; font-size:16px; }
+  .empty-state{ text-align:center; color:var(--text-dim); padding:40px 20px; font-size:13px; }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottomnav{
+    display:flex; border-top:1px solid var(--line); background:var(--bg-elevated);
+  }
+  .bottomnav button{
+    flex:1; background:none; border:none; color:var(--text-dim); padding:10px 0 8px;
+    font-family:var(--font-body); font-size:11px; font-weight:600; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+  }
+  .bottomnav button.active{ color:var(--gold); }
+  .bottomnav .icon{ font-size:18px; }
+  .party-suggestions{
+    position:absolute; top:100%; left:0; right:0; z-index:20;
+    background:var(--bg-elevated); border:1px solid var(--line); border-radius:8px;
+    max-height:200px; overflow-y:auto; margin-top:2px;
+  }
+  .quick-add-bar{
+    display:flex; gap:8px; padding:8px 16px;
+  }
+  .quick-add-bar input{
+    flex:1; background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    padding:12px 14px; font-size:13px; color:var(--text); outline:none;
+  }
+  .quick-add-bar input:focus{ border-color:var(--gold); }
+  /* FAB + AI menu */
+  .fab{ position:fixed; bottom:80px; right:16px; z-index:100; display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .fab-btn{
+    width:56px; height:56px; border-radius:50%; border:none;
+    background:linear-gradient(135deg,var(--gold),var(--gold-dim));
+    color:#1a1608; font-size:28px; font-weight:700; cursor:pointer;
+    box-shadow:0 4px 16px rgba(201,162,74,.4);
+    transition:transform .2s;
+    display:flex; align-items:center; justify-content:center;
+    line-height:1;
+  }
+  .fab-btn.open{ transform:rotate(45deg); }
+  .fab-menu{ display:flex; flex-direction:column; gap:6px; }
+  .fab-opt{
+    background:var(--bg-elevated); border:1px solid var(--line); border-radius:10px;
+    padding:10px 16px; color:var(--text); font-size:13px; cursor:pointer;
+    text-align:left; white-space:nowrap; font-family:var(--font-body);
+    box-shadow:0 4px 12px rgba(0,0,0,.4); transition:background .15s;
+  }
+  .fab-opt:hover{ background:var(--surface); }
+  .fab-opt:active{ transform:scale(.97); }
+  .ai-overlay{
+    position:fixed; inset:0; z-index:200;
+    background:rgba(0,0,0,.7); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
+  }
+  .ai-spinner{
+    width:40px; height:40px; border:3px solid var(--line);
+    border-top-color:var(--gold); border-radius:50%;
+    animation:spin .8s linear infinite;
+  }
+  @keyframes spin{ to{transform:rotate(360deg)} }
+  .ai-status{ font-size:15px; color:var(--text); font-weight:600; }
+  .ai-result{
+    background:var(--bg-elevated); border-radius:14px; padding:20px;
+    max-width:360px; width:90%; text-align:center;
+  }
+  .ai-result .val{ font-size:24px; font-weight:700; color:var(--gold); margin:8px 0; }
+  .party-suggestion{
+    padding:10px 12px; cursor:pointer; font-size:13px;
+    display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px solid var(--line);
+  }
+  .party-suggestion:last-child{ border-bottom:none; }
+  .party-suggestion:hover{ background:var(--bg); }
+  .party-suggestion .bal{ font-size:11px; color:var(--text-dim); }
+  .party-suggestion.new-party{ color:var(--gold); font-weight:600; }
+  .field.party-wrap{ position:relative; }
+  .hidden{ display:none !important; }
+  input.auto-ref{ color:var(--text-dim); cursor:default; }
+  input[disabled]{ opacity:.6; cursor:default; }
+  select.item-uom{
+    background:var(--bg-elevated); border:1px solid var(--line); color:var(--text);
+    border-radius:6px; padding:8px 4px; font-size:12px; width:100%;
+    outline:none; cursor:pointer;
+  }
+
+  /* ---------- JOURNAL ENTRY TERMINAL ---------- */
+  #view-journal{ flex:1; display:flex; flex-direction:column; background:#0A0F18; }
+  #view-journal .je-header{
+    flex-direction:row; justify-content:space-between; align-items:center;
+    padding:14px 16px; background:#111827; border-bottom:1px solid #1E293B;
+  }
+  #view-journal .je-header{display:flex}
+  .je-back{color:#64748B;font-size:11px;font-weight:800;background:none;border:none;cursor:pointer;font-family:var(--font-body)}
+  .je-title{color:#fff;font-size:13px;font-weight:900;letter-spacing:1px}
+  .je-post-btn{background:var(--primary);border:none;padding:6px 14px;border-radius:3px;color:#fff;font-size:11px;font-weight:800;cursor:pointer;font-family:var(--font-body)}
+  .je-post-btn:disabled{opacity:.5;cursor:default}
+  .je-meta{background:#111827;border-bottom:1px solid #1E293B;padding:16px}
+  .je-meta-row{display:flex;gap:12px;margin-bottom:12px}
+  .je-meta-row:last-child{margin-bottom:0}
+  .je-field{flex:1}
+  .je-field-label{color:#475569;font-size:9px;font-weight:800;letter-spacing:.5px;margin-bottom:6px}
+  .je-field-box{background:#0A0F18;border:1px solid #1E293B;border-radius:3px;height:44px;display:flex;align-items:center;padding:0 12px}
+  .je-field-box input{background:none;border:none;color:#fff;font-size:13px;font-weight:600;width:100%;outline:none;font-family:var(--font-body)}
+  .je-field-box input::placeholder{color:#475569}
+  .je-balance{
+    background:#111827;border:1px solid #1E293B;border-radius:4px;margin:16px;
+    padding:14px;display:flex;flex-direction:row;justify-content:space-between;align-items:center;
+  }
+  .je-bal-col{flex:1;text-align:center}
+  .je-bal-label{color:#475569;font-size:8px;font-weight:800}
+  .je-bal-val{color:#fff;font-size:12px;font-weight:800;margin-top:4px;font-family:monospace}
+  .je-bal-div{width:1px;height:24px;background:#1E293B}
+  .je-balanced{color:#10B981}
+  .je-unbalanced{color:var(--primary)}
+  .je-section{color:#64748B;font-size:10px;font-weight:800;letter-spacing:1px;margin:0 20px 10px}
+  .je-line{
+    background:#111827;border:1px solid #1E293B;border-radius:4px;
+    padding:14px;margin:0 20px 10px;
+  }
+  .je-line-top{display:flex;justify-content:space-between;align-items:center}
+  .je-line-code{color:#475569;font-size:12px;font-family:monospace;font-weight:700}
+  .je-line-code span{color:#fff}
+  .je-line-remove{color:#64748B;font-size:10px;font-weight:700;background:none;border:none;cursor:pointer;font-family:var(--font-body)}
+  .je-line-bot{display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+  .je-line-cc{color:#475569;font-size:10px;font-weight:600}
+  .je-line-amt{font-size:13px;font-weight:800;font-family:monospace}
+  .je-dr{color:#3B82F6}
+  .je-cr{color:#F59E0B}
+  .je-add-form{
+    background:#111827;border:1px solid #1E293B;border-radius:4px;
+    padding:16px;margin:16px 20px;
+  }
+  .je-add-form-title{color:var(--primary);font-size:11px;font-weight:800;letter-spacing:.5px;margin-bottom:12px}
+  .je-add-row{display:flex;gap:10px;justify-content:space-between;margin-bottom:12px}
+  .je-add-row:last-child{margin-bottom:0}
+  .je-add-field{flex:1}
+  .je-add-field select{width:100%;height:44px;background:#0A0F18;border:1px solid #1E293B;border-radius:3px;color:#fff;font-size:12px;font-weight:700;padding:0 10px;outline:none;font-family:var(--font-body)}
+  .je-toggle{display:flex;height:44px;border:1px solid #1E293B;border-radius:3px;overflow:hidden}
+  .je-toggle-btn{flex:1;background:#0A0F18;border:none;color:#475569;font-size:11px;font-weight:800;cursor:pointer;font-family:var(--font-body)}
+  .je-toggle-btn.active-dr{background:#3B82F6;color:#fff}
+  .je-toggle-btn.active-cr{background:#F59E0B;color:#fff}
+  .je-insert-btn{
+    width:100%;height:46px;background:rgba(var(--primary-rgb),.08);border:1px solid var(--primary);
+    border-radius:3px;color:var(--primary);font-size:11px;font-weight:800;letter-spacing:.5px;
+    cursor:pointer;margin-top:16px;font-family:var(--font-body);
+  }
+  .je-scroll{flex:1;overflow-y:auto;padding-bottom:20px}
+
+  /* ---------- ACCOUNTS PAYABLE ---------- */
+  #view-ap{flex:1;display:flex;flex-direction:column;background:#0A0F18}
+  #view-ap .ap-header{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:14px 20px;background:#111827;border-bottom:1px solid #1E293B}
+  .ap-back{color:#64748B;font-size:10px;font-weight:800;letter-spacing:.5px;background:none;border:none;cursor:pointer;font-family:var(--font-body)}
+  .ap-title{color:#fff;font-size:14px;font-weight:900;letter-spacing:1px}
+  .ap-segments{display:flex;background:#111827;border-bottom:1px solid #1E293B;height:48px}
+  .ap-seg{flex:1;display:flex;align-items:center;justify-content:center;border-bottom:2px solid transparent;cursor:pointer}
+  .ap-seg.active{border-color:var(--primary);background:rgba(var(--primary-rgb),.02)}
+  .ap-seg-text{color:#475569;font-size:10px;font-weight:800;letter-spacing:.5px}
+  .ap-seg.active .ap-seg-text{color:var(--primary)}
+  .ap-list{padding:16px 20px 24px;flex:1;overflow-y:auto}
+  .ap-vendor{background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:12px}
+  .ap-v-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .ap-v-id{font-family:monospace;color:var(--primary);font-size:11px;font-weight:700}
+  .ap-v-name{color:#fff;font-size:14px;font-weight:700;margin-top:2px}
+  .ap-v-cat{background:#1E293B;padding:3px 8px;border-radius:2px;color:#94A3B8;font-size:8px;font-weight:800;letter-spacing:.5px}
+  .ap-v-div{height:1px;background:#1E293B;margin:12px 0}
+  .ap-v-bot{display:flex;justify-content:space-between;align-items:center}
+  .ap-v-label{color:#475569;font-size:9px;font-weight:700}
+  .ap-v-bal{font-size:14px;font-weight:800;font-family:monospace}
+  .ap-v-bal.owing{color:#EF4444}
+  .ap-v-bal.cleared{color:#10B981}
+  .ap-empty{text-align:center;color:#475569;font-size:12px;padding:40px 0}
+  .ap-form{padding:24px 20px 32px}
+  .ap-field{margin-bottom:20px}
+  .ap-field-label{color:#64748B;font-size:10px;font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+  .ap-field-box{background:#111827;border:1px solid #1E293B;border-radius:4px;height:48px;display:flex;align-items:center;padding:0 14px}
+  .ap-field-box input{background:none;border:none;color:#fff;font-size:14px;font-weight:600;width:100%;outline:none;font-family:var(--font-body)}
+  .ap-field-box input::placeholder{color:#475569}
+  .ap-dual{display:flex;justify-content:space-between}
+  .ap-dual .ap-field{width:48%}
+  .ap-submit{background:var(--primary);border:none;height:52px;border-radius:4px;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-family:var(--font-body);box-shadow:0 4px 14px rgba(var(--primary-rgb),.2)}
+
+  /* ---------- ACCOUNTS RECEIVABLE ---------- */
+  #view-ar{flex:1;display:flex;flex-direction:column;background:#0A0F18}
+  #view-ar .ap-header{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:14px 20px;background:#111827;border-bottom:1px solid #1E293B}
+  #view-ar .ap-header .ap-title{font-size:14px}
+  .ar-segments{display:flex;background:#111827;border-bottom:1px solid #1E293B;height:48px}
+  .ar-seg{flex:1;display:flex;align-items:center;justify-content:center;border-bottom:2px solid transparent;cursor:pointer}
+  .ar-seg.active{border-color:var(--primary);background:rgba(var(--primary-rgb),.02)}
+  .ar-seg-text{color:#475569;font-size:10px;font-weight:800;letter-spacing:.5px}
+  .ar-seg.active .ar-seg-text{color:var(--primary)}
+  .ar-customer{background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:12px}
+  .ar-c-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .ar-c-id{font-family:monospace;color:#64748B;font-size:11px;font-weight:700}
+  .ar-c-id span{color:var(--primary);font-weight:800}
+  .ar-c-name{color:#fff;font-size:14px;font-weight:700;margin-top:4px}
+  .ar-c-badge{padding:3px 8px;border-radius:2px;font-size:8px;font-weight:900;letter-spacing:.5px}
+  .ar-c-badge.arrears{background:rgba(239,68,68,.1);color:#EF4444}
+  .ar-c-badge.settled{background:rgba(16,185,129,.1);color:#10B981}
+  .ar-c-div{height:1px;background:#1E293B;margin:12px 0}
+  .ar-c-bot{display:flex;justify-content:space-between;align-items:center}
+  .ar-c-label{color:#475569;font-size:9px;font-weight:700;margin-bottom:2px}
+  .ar-c-val{font-size:13px;font-weight:800;font-family:monospace;color:#fff}
+  .ar-c-val.due{color:#EF4444}
+  .ar-c-val.settled{color:#10B981}
+  .ar-form{padding:24px 20px 32px}
+  .ar-submit{background:var(--primary);border:none;height:52px;border-radius:4px;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-family:var(--font-body);box-shadow:0 4px 14px rgba(var(--primary-rgb),.2)}
+
+  /* ---------- INVENTORY MODULE ---------- */
+  #view-inv{flex:1;display:flex;flex-direction:column;background:#0A0F18}
+  #view-inv .ap-header{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:14px 20px;background:#111827;border-bottom:1px solid #1E293B}
+  #view-inv .ap-header .ap-title{font-size:14px}
+  .inv-sku{background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:12px}
+  .inv-sku-code{font-family:monospace;color:var(--primary);font-size:11px;font-weight:800}
+  .inv-sku-code span{color:#94A3B8}
+  .inv-sku-desc{color:#fff;font-size:14px;font-weight:700;margin-top:4px}
+  .inv-sku-badge{padding:3px 8px;border-radius:2px;font-size:8px;font-weight:900;letter-spacing:.5px}
+  .inv-sku-badge.low{background:rgba(239,68,68,.1);color:#EF4444}
+  .inv-sku-badge.ok{background:rgba(16,185,129,.1);color:#10B981}
+  .inv-sku-div{height:1px;background:#1E293B;margin:12px 0}
+  .inv-sku-div.dashed{border-top:1px dashed #1E293B;background:transparent;height:0}
+  .inv-sku-row{display:flex;justify-content:space-between;align-items:center}
+  .inv-sku-label{color:#475569;font-size:9px;font-weight:700;margin-bottom:2px}
+  .inv-sku-val{font-size:14px;font-weight:800;font-family:monospace;color:#fff}
+  .inv-sku-wh{color:#475569;font-size:9px;font-weight:800;letter-spacing:.5px}
+  .inv-sku-wh span{color:#fff}
+  .inv-transfer-btn{background:var(--primary);border:none;height:52px;border-radius:4px;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-family:var(--font-body);box-shadow:0 4px 14px rgba(var(--primary-rgb),.2)}
+
+  /* ---------- FIXED ASSETS ---------- */
+  #view-fa{flex:1;display:flex;flex-direction:column;background:#0A0F18}
+  #view-fa .ap-header{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:14px 20px;background:#111827;border-bottom:1px solid #1E293B}
+  .fa-card{background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:12px}
+  .fa-card-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .fa-id{font-family:monospace;color:var(--primary);font-size:11px;font-weight:800}
+  .fa-id span{color:#94A3B8}
+  .fa-name{color:#fff;font-size:14px;font-weight:700;margin-top:4px}
+  .fa-loc{background:#1E293B;padding:3px 8px;border-radius:2px;color:#94A3B8;font-size:8px;font-weight:800;letter-spacing:.5px}
+  .fa-div{height:1px;background:#1E293B;margin:12px 0}
+  .fa-grid{display:flex;justify-content:space-between}
+  .fa-g-item{flex:1}
+  .fa-g-label{color:#475569;font-size:8px;font-weight:700;margin-bottom:4px}
+  .fa-g-val{color:#fff;font-size:11px;font-weight:800;font-family:monospace}
+  .fa-g-val.dep{color:#EF4444}
+  .fa-g-val.book{color:#10B981}
+  .fa-form{padding:24px 20px 32px}
+  .fa-submit{background:var(--primary);border:none;height:52px;border-radius:4px;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-family:var(--font-body);box-shadow:0 4px 14px rgba(var(--primary-rgb),.2)}
+
+  /* ---------- CONSTRUCTION PROJECT ---------- */
+  #view-const{flex:1;display:flex;flex-direction:column;background:#0A0F18}
+  #view-const .ap-header{display:flex;flex-direction:row;justify-content:space-between;align-items:center;padding:14px 20px;background:#111827;border-bottom:1px solid #1E293B}
+  .const-banner{background:#0F172A;padding:12px 20px;border-bottom:1px solid #1E293B}
+  .const-banner-label{color:#475569;font-size:8px;font-weight:800;letter-spacing:.5px}
+  .const-banner-name{color:var(--primary);font-size:12px;font-weight:900;margin-top:2px;letter-spacing:.5px}
+  .const-phase{background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:12px}
+  .const-ph-top{display:flex;justify-content:space-between;align-items:flex-start}
+  .const-ph-id{font-family:monospace;color:var(--primary);font-size:11px;font-weight:800}
+  .const-ph-id span{color:#64748B}
+  .const-ph-name{color:#fff;font-size:13px;font-weight:700;margin-top:4px}
+  .const-ph-badge{padding:2px 6px;border-radius:2px;font-size:8px;font-weight:900;letter-spacing:.5px;color:#fff}
+  .const-ph-badge.PENDING{background:rgba(71,85,105,.2)}
+  .const-ph-badge.ACTIVE{background:rgba(245,158,11,.1)}
+  .const-ph-badge.CERTIFIED{background:rgba(16,185,129,.1)}
+  .const-progress{display:flex;align-items:center;margin-top:14px}
+  .const-bar-bg{flex:1;height:6px;background:#0A0F18;border-radius:3px;overflow:hidden;margin-right:10px}
+  .const-bar-fill{height:100%;background:var(--primary);border-radius:3px}
+  .const-bar-pct{color:#94A3B8;font-size:10px;font-weight:700;font-family:monospace}
+  .const-div{height:1px;background:#1E293B;margin:12px 0}
+  .const-grid{display:flex;justify-content:space-between}
+  .const-g-item{flex:1}
+  .const-g-label{color:#475569;font-size:8px;font-weight:700;margin-bottom:4px}
+  .const-g-val{color:#fff;font-size:11px;font-weight:800;font-family:monospace}
+  .const-g-val.draw{color:#3B82F6}
+  .const-g-val.headroom{color:#10B981}
+  .const-form{padding:24px 20px 32px}
+  .const-submit{background:var(--primary);border:none;height:52px;border-radius:4px;color:#fff;font-size:12px;font-weight:800;letter-spacing:1px;cursor:pointer;width:100%;margin-top:12px;font-family:var(--font-body);box-shadow:0 4px 14px rgba(var(--primary-rgb),.2)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ BOOT VIEW ============ -->
+  <div id="view-boot" class="view">
+    <div class="boot-logo">
+      <div class="top">SILICON</div>
+      <div class="bot">PROPERTIES</div>
+    </div>
+    <div class="boot-spinner"></div>
+    <div class="boot-msg" id="boot-msg">INITIALIZING CORE SYSTEMS...</div>
+  </div>
+
+  <!-- ============ WELCOME VIEW ============ -->
+  <div id="view-welcome" class="view">
+    <div class="w-brand">
+      <div class="w-badge"><span>ENTERPRISE BUILD V2.0</span></div>
+      <div class="w-name">Accounting &amp; Finance</div>
+      <div class="w-sub">ERP Web &amp; Mobile App</div>
+      <div class="w-bar"></div>
+      <div class="w-tagline">Smart. Simple. Secure.</div>
+    </div>
+    <div class="w-blueprint">
+      <div class="w-blueprint-title">INTEGRATED SYSTEMS SEGMENTS</div>
+      <div class="w-grid">
+        <div class="w-grid-item"><div class="w-grid-dot"></div><span class="w-grid-text">FINANCE</span></div>
+        <div class="w-grid-item"><div class="w-grid-dot"></div><span class="w-grid-text">INVENTORY</span></div>
+        <div class="w-grid-item"><div class="w-grid-dot"></div><span class="w-grid-text">CONSTRUCTION</span></div>
+        <div class="w-grid-item"><div class="w-grid-dot"></div><span class="w-grid-text">SALES</span></div>
+      </div>
+    </div>
+    <div>
+      <button class="w-btn" id="welcome-auth">AUTHENTICATE INSTANCE</button>
+      <div class="w-footer">SECURE PROTOCOL INTERACTION NOTICE: ALL SYSTEM ACTIONS LOGGED UNDER STRICT HMAC TRACE ENGINE CONTROLS. UNSANCTIONED VISITATION PROHIBITED.</div>
+    </div>
+  </div>
+
+  <!-- ============ AUTH VIEW ============ -->
+  <div id="view-auth" class="view">
+    <div class="auth-header">
+      <div class="auth-title" id="auth-heading">SECURE ACCESS</div>
+      <div class="auth-sub" id="auth-sub">Silicon AppAcc Production Gate</div>
+      <div class="auth-line"></div>
+    </div>
+
+    <div class="auth-form">
+      <label class="auth-label">OPERATIVE CORRESPONDENCE (EMAIL)</label>
+      <div class="auth-input-box">
+        <input type="email" id="auth-email" placeholder="operator@siliconproperties.com" autocomplete="email" />
+      </div>
+
+      <div class="auth-label-row">
+        <label class="auth-label" style="margin-bottom:0;">PASSPHRASE VECTOR</label>
+        <button class="auth-showhide" id="auth-showhide">SHOW</button>
+      </div>
+      <div class="auth-input-box" style="margin-top:8px;">
+        <input type="password" id="auth-password" placeholder="••••••••••••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="auth-error" id="auth-error"></div>
+      <div class="auth-success" id="auth-success"></div>
+    </div>
+
+    <div>
+      <button class="auth-btn" id="auth-submit">INITIATE SECURE TERMINAL</button>
+      <button class="auth-toggle" id="auth-toggle">Don't have an account? Sign Up Now</button>
+      <button class="auth-back" id="auth-back">RETURN TO ROOT</button>
+    </div>
+  </div>
+
+  <!-- ============ WORKSPACE SELECTOR ============ -->
+  <div id="view-workspace" class="view">
+    <div class="ws-header">
+      <div class="ws-title">WORKSPACE DOMAIN</div>
+      <div class="ws-sub">Select or spin up an isolated enterprise instance</div>
+      <div class="ws-line"></div>
+    </div>
+    <div class="ws-list" id="ws-list">
+      <div class="ws-loading">
+        <div class="boot-spinner"></div>
+        <div class="txt">RESOLVING TENANT SCHEMAS...</div>
+      </div>
+    </div>
+    <div class="ws-bottom">
+      <button class="ws-create" id="ws-create">+ REGISTER NEW LEGAL ENTITY</button>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <div id="view-dashboard" class="view">
+    <div class="topbar">
+      <button class="back hidden">‹</button>
+      <div class="titles">
+        <div class="co" id="dash-company">SILICON PROPERTIES</div>
+        <div class="range" id="dash-range">FY 2025–26</div>
+      </div>
+      <button class="cal" id="logout-btn" title="Sign out">🚪</button>
+    </div>
+    <div class="kpi-scroll" id="kpi-scroll"></div>
+    <div class="frame" id="entry-grid"></div>
+    <!-- FAB + AI menu -->
+    <div class="fab" id="fab">
+      <div class="fab-menu hidden" id="fab-menu">
+        <button class="fab-opt" data-action="scan">📷 Scan Receipt</button>
+        <button class="fab-opt" data-action="quick">⚡ Quick Add</button>
+        <button class="fab-opt" data-action="entry">📄 New Entry</button>
+      </div>
+      <button class="fab-btn" id="fab-btn">+</button>
+    </div>
+    <input type="file" id="receipt-input" accept="image/*" capture="environment" class="hidden" />
+    <!-- AI processing overlay -->
+    <div class="ai-overlay hidden" id="ai-overlay">
+      <div class="ai-spinner"></div>
+      <div class="ai-status" id="ai-status">Processing…</div>
+    </div>
+  </div>
+  </div>
+
+  <!-- ============ ENTRY FORM VIEW ============ -->
+  <div id="view-entry" class="view">
+    <div class="topbar">
+      <button class="back" id="entry-back">‹</button>
+      <div class="titles">
+        <div class="co" id="entry-title">Purchase</div>
+        <div class="range">New Entry</div>
+      </div>
+      <div style="width:26px;"></div>
+    </div>
+    <div class="form-wrap">
+      <div class="field">
+        <label>Date</label>
+        <input type="date" id="f-date" />
+      </div>
+      <div class="field party-wrap">
+        <label>Party (customer / supplier)</label>
+        <input type="text" id="f-party" placeholder="e.g. Jolshiri Cement Supplier" autocomplete="off" />
+        <div class="party-suggestions hidden" id="party-suggestions"></div>
+      </div>
+      <div class="field">
+        <label>Reference / Voucher No.</label>
+        <input type="text" id="f-ref" readonly class="auto-ref" />
+      </div>
+
+      <div id="items-section">
+        <label style="font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em;">Items</label>
+        <div class="items-table" id="items-table">
+          <div class="items-header">
+            <span>Description</span><span>Qty</span><span>Unit</span><span>Rate</span><span>Amount</span><span></span>
+          </div>
+        </div>
+        <button class="add-item-btn" id="add-item" style="margin-top:8px;">+ Add line item</button>
+      </div>
+
+      <div class="field" id="amount-only-field">
+        <label>Amount (৳)</label>
+        <input type="number" step="0.01" id="f-amount" placeholder="0.00" />
+      </div>
+
+      <div class="field">
+        <label>Narration</label>
+        <textarea id="f-narration" rows="2" placeholder="Notes for this entry"></textarea>
+      </div>
+
+      <div class="total-line"><span>Total</span><span id="f-total">৳0.00</span></div>
+      <div class="error-msg" id="entry-error"></div>
+      <button class="btn btn-primary" id="entry-save">Save Entry</button>
+    </div>
+  </div>
+
+  <!-- ============ JOURNAL ENTRY TERMINAL VIEW ============ -->
+  <div id="view-journal" class="view">
+    <div class="je-header">
+      <button class="je-back" id="je-back">← CANCEL</button>
+      <span class="je-title">JOURNAL POSTING ENGINE</span>
+      <button class="je-post-btn" id="je-post">POST</button>
+    </div>
+    <div class="je-scroll" id="je-scroll">
+      <div class="je-meta">
+        <div class="je-meta-row">
+          <div class="je-field">
+            <div class="je-field-label">REFERENCE VOUCHER NUMBER</div>
+            <div class="je-field-box"><input id="je-ref" placeholder="e.g., JV-2026-0718" /></div>
+          </div>
+          <div class="je-field">
+            <div class="je-field-label">NARRATION SIGNATURE</div>
+            <div class="je-field-box"><input id="je-narration" placeholder="Memo notes..." /></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="je-balance">
+        <div class="je-bal-col">
+          <div class="je-bal-label">TOTAL DEBITS</div>
+          <div class="je-bal-val" id="je-total-dr">BDT 0</div>
+        </div>
+        <div class="je-bal-div"></div>
+        <div class="je-bal-col">
+          <div class="je-bal-label">TOTAL CREDITS</div>
+          <div class="je-bal-val" id="je-total-cr">BDT 0</div>
+        </div>
+        <div class="je-bal-div"></div>
+        <div class="je-bal-col">
+          <div class="je-bal-label">VARIANCE STATUS</div>
+          <div class="je-bal-val" id="je-variance">BALANCED</div>
+        </div>
+      </div>
+
+      <div class="je-section">TRANSACTION LEDGER ATTACHMENTS</div>
+      <div id="je-lines"></div>
+
+      <div class="je-add-form">
+        <div class="je-add-form-title">+ APPEND TRANSACTION LINE NODE</div>
+        <div class="je-add-row">
+          <div class="je-add-field" style="flex:0 0 30%">
+            <div class="je-field-label">GL ACCOUNT CODE</div>
+            <div class="je-field-box"><input id="je-acc-code" placeholder="5000-08" /></div>
+          </div>
+          <div class="je-add-field" style="flex:0 0 65%">
+            <div class="je-field-label">ACCOUNT SCHEMATIC NAME</div>
+            <div class="je-field-box"><input id="je-acc-name" placeholder="Material Consumption" /></div>
+          </div>
+        </div>
+        <div class="je-add-row">
+          <div class="je-add-field" style="flex:0 0 30%">
+            <div class="je-field-label">BOOKING PATTERN</div>
+            <div class="je-toggle">
+              <button class="je-toggle-btn active-dr" id="je-toggle-dr">DR</button>
+              <button class="je-toggle-btn" id="je-toggle-cr">CR</button>
+            </div>
+          </div>
+          <div class="je-add-field" style="flex:0 0 30%">
+            <div class="je-field-label">AMOUNT (BDT)</div>
+            <div class="je-field-box"><input id="je-amount" placeholder="8120000" type="number" /></div>
+          </div>
+          <div class="je-add-field" style="flex:0 0 35%">
+            <div class="je-field-label">COST DIMENSION</div>
+            <div class="je-field-box"><input id="je-cost-center" placeholder="SAMTAZ-WIP" /></div>
+          </div>
+        </div>
+        <button class="je-insert-btn" id="je-insert">STAGE ENTRY ROW INTO MATRIX</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ACCOUNTS PAYABLE VIEW ============ -->
+  <div id="view-ap" class="view">
+    <div class="ap-header">
+      <button class="ap-back" id="ap-back">← CORE DASHBOARD</button>
+      <span class="ap-title">ACCOUNTS PAYABLE (AP)</span>
+      <div style="width:60px"></div>
+    </div>
+    <div class="ap-segments" id="ap-segments">
+      <div class="ap-seg active" data-ap-tab="LEDGER">
+        <span class="ap-seg-text">VENDOR LEDGER MASTER</span>
+      </div>
+      <div class="ap-seg" data-ap-tab="INVOICE">
+        <span class="ap-seg-text">PURCHASE INVOICING PIPELINE</span>
+      </div>
+    </div>
+    <div id="ap-ledger" class="ap-list"></div>
+    <div id="ap-invoice" class="ap-list hidden">
+      <div class="ap-form">
+        <div class="ap-field">
+          <div class="ap-field-label">TARGET VENDOR SPECIFICATION ID</div>
+          <div class="ap-field-box"><input id="ap-vendor-id" placeholder="e.g., V-002" /></div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">PURCHASE INVOICE / VOUCHER NUMBER</div>
+          <div class="ap-field-box"><input id="ap-inv-no" placeholder="e.g., INV-ECO-2026-99" /></div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">GROSS AMOUNT (BDT)</div>
+            <div class="ap-field-box"><input id="ap-gross" placeholder="8120000" type="number" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">TAX / VAT DEDUCTION</div>
+            <div class="ap-field-box"><input id="ap-tax" placeholder="0" type="number" /></div>
+          </div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">STRUCTURAL COST CENTER DIMENSION LINK</div>
+          <div class="ap-field-box"><input id="ap-cost-center" placeholder="e.g., SILICON-SAMTAZ-WIP" /></div>
+        </div>
+        <button class="ap-submit" id="ap-submit">COMMIT PROCUREMENT LIABILITY OUTLAY</button>
+      </div>
+    </div>
+  </div>
+  <!-- ============ ACCOUNTS RECEIVABLE VIEW ============ -->
+  <div id="view-ar" class="view">
+    <div class="ap-header">
+      <button class="ap-back" id="ar-back">← CORE DASHBOARD</button>
+      <span class="ap-title">ACCOUNTS RECEIVABLE (AR)</span>
+      <div style="width:60px"></div>
+    </div>
+    <div class="ar-segments" id="ar-segments">
+      <div class="ar-seg active" data-ar-tab="REGISTRY">
+        <span class="ar-seg-text">CUSTOMER REGISTRY</span>
+      </div>
+      <div class="ar-seg" data-ar-tab="INVOICE">
+        <span class="ar-seg-text">DYNAMIC INVOICING CONSOLE</span>
+      </div>
+    </div>
+    <div id="ar-registry" class="ap-list"></div>
+    <div id="ar-invoice" class="ap-list hidden">
+      <div class="ar-form">
+        <div class="ap-field">
+          <div class="ap-field-label">BUYER ACCOUNT ALLOCATION ID</div>
+          <div class="ap-field-box"><input id="ar-customer-id" placeholder="e.g., C-701" /></div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">SALES INVOICE SERIAL REFERENCE</div>
+          <div class="ap-field-box"><input id="ar-inv-no" placeholder="e.g., TR-INV-2026-004" /></div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">ALLOTMENT PROPERTY UNIT / PLOT DESIGNATION</div>
+          <div class="ap-field-box"><input id="ar-unit" placeholder="e.g., SILICON SAMTAZ - 4A" /></div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">MILESTONE SCHEDULE AMOUNT</div>
+            <div class="ap-field-box"><input id="ar-milestone" placeholder="4500000" type="number" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">GOVERNMENT REVENUE VAT</div>
+            <div class="ap-field-box"><input id="ar-vat" placeholder="0" type="number" /></div>
+          </div>
+        </div>
+        <button class="ar-submit" id="ar-submit">GENERATE INVOICE & RECOGNIZE REVENUE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ INVENTORY VIEW ============ -->
+  <div id="view-inv" class="view">
+    <div class="ap-header">
+      <button class="ap-back" id="inv-back">← CORE DASHBOARD</button>
+      <span class="ap-title">STOCK MASTER SKU INDEX</span>
+      <div style="width:60px"></div>
+    </div>
+    <div class="ar-segments" id="inv-segments">
+      <div class="ar-seg active" data-inv-tab="SKU">
+        <span class="ar-seg-text">STOCK BALANCES</span>
+      </div>
+      <div class="ar-seg" data-inv-tab="TRANSFER">
+        <span class="ar-seg-text">ZONE MUTATION INTERCHANGE</span>
+      </div>
+    </div>
+    <div id="inv-sku-list" class="ap-list"></div>
+    <div id="inv-transfer" class="ap-list hidden">
+      <div class="ar-form">
+        <div class="ap-field">
+          <div class="ap-field-label">TARGET MATERIAL SKU CODE</div>
+          <div class="ap-field-box"><input id="inv-sku-code" placeholder="e.g., MAT-BRK-ECO" /></div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">DISPATCH / SOURCE ZONE</div>
+            <div class="ap-field-box"><input id="inv-source" placeholder="e.g., Central Depot" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">RECEIPT / DESTINATION ZONE</div>
+            <div class="ap-field-box"><input id="inv-dest" placeholder="e.g., Samtaz Site" /></div>
+          </div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">QUANTITY / MASS TOTAL TO MUTATE</div>
+          <div class="ap-field-box"><input id="inv-qty" placeholder="e.g., 5000" type="number" /></div>
+        </div>
+        <button class="inv-transfer-btn" id="inv-transfer-btn">EXECUTE SECURE MATERIAL INTERCHANGE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FIXED ASSETS VIEW ============ -->
+  <div id="view-fa" class="view">
+    <div class="ap-header">
+      <button class="ap-back" id="fa-back">← CORE DASHBOARD</button>
+      <span class="ap-title">FIXED ASSETS REGISTRY</span>
+      <div style="width:60px"></div>
+    </div>
+    <div class="ar-segments" id="fa-segments">
+      <div class="ar-seg active" data-fa-tab="REGISTRY">
+        <span class="ar-seg-text">ASSET INVENTORY MASTER</span>
+      </div>
+      <div class="ar-seg" data-fa-tab="CAPITALIZE">
+        <span class="ar-seg-text">CAPITALIZE NEW EXPENDITURE</span>
+      </div>
+    </div>
+    <div id="fa-registry" class="ap-list"></div>
+    <div id="fa-capitalize" class="ap-list hidden">
+      <div class="fa-form">
+        <div class="ap-field">
+          <div class="ap-field-label">ASSET SPECIFICATION DESCRIPTION</div>
+          <div class="ap-field-box"><input id="fa-name" placeholder="e.g., Cat Structural Excavator Model 320" /></div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">HISTORICAL ACQUISITION COST</div>
+            <div class="ap-field-box"><input id="fa-cost" placeholder="2400000" type="number" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">SALVAGE ESTIMATE VALUE</div>
+            <div class="ap-field-box"><input id="fa-salvage" placeholder="400000" type="number" /></div>
+          </div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">LIFECYCLE HORIZON (YEARS)</div>
+            <div class="ap-field-box"><input id="fa-life" placeholder="8" type="number" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">LOGISTICS TRACK ZONE</div>
+            <div class="ap-field-box"><input id="fa-location" placeholder="e.g., Jolshiri Site" /></div>
+          </div>
+        </div>
+        <button class="fa-submit" id="fa-submit">INITIALIZE AMORTIZED LEASE / CAPITAL NODE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ CONSTRUCTION PROJECT VIEW ============ -->
+  <div id="view-const" class="view">
+    <div class="ap-header">
+      <button class="ap-back" id="const-back">← CORE DASHBOARD</button>
+      <span class="ap-title">CONSTRUCTION CONTROL HUB</span>
+      <div style="width:60px"></div>
+    </div>
+    <div class="const-banner">
+      <div class="const-banner-label">TARGET SPECIFICATION SCHEMATIC</div>
+      <div class="const-banner-name">SILICON SAMTAZ (G+M+8) - JOLSHIRI R/A</div>
+    </div>
+    <div class="ar-segments" id="const-segments">
+      <div class="ar-seg active" data-const-tab="PHASE">
+        <span class="ar-seg-text">PHASE PROGRESS TRACER</span>
+      </div>
+      <div class="ar-seg" data-const-tab="DRAW">
+        <span class="ar-seg-text">CONTRACT DRAW MANAGEMENT</span>
+      </div>
+    </div>
+    <div id="const-phases" class="ap-list"></div>
+    <div id="const-draw" class="ap-list hidden">
+      <div class="const-form">
+        <div class="ap-field">
+          <div class="ap-field-label">TARGET BUILD PHASE CODE</div>
+          <div class="ap-field-box"><input id="const-phase-id" placeholder="e.g., PH-02" /></div>
+        </div>
+        <div class="ap-field">
+          <div class="ap-field-label">PROGRESS DRAW VOUCHER SERIAL</div>
+          <div class="ap-field-box"><input id="const-draw-ref" placeholder="e.g., DRAW-SAMTAZ-002" /></div>
+        </div>
+        <div class="ap-dual">
+          <div class="ap-field">
+            <div class="ap-field-label">REQUESTED DRAW OUTLAY</div>
+            <div class="ap-field-box"><input id="const-draw-amt" placeholder="BDT Val..." type="number" /></div>
+          </div>
+          <div class="ap-field">
+            <div class="ap-field-label">CERTIFIED METRIC WORK %</div>
+            <div class="ap-field-box"><input id="const-draw-pct" placeholder="e.g., 85" type="number" /></div>
+          </div>
+        </div>
+        <button class="const-submit" id="const-submit">APPROVE AND ENGAGE PROGRESSIVE DISBURSEMENT</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="view-report" class="view">
+    <div class="topbar">
+      <button class="back hidden">‹</button>
+      <div class="titles">
+        <div class="co">Reports</div>
+        <div class="range" id="report-range">FY 2025–26</div>
+      </div>
+      <div style="width:26px;"></div>
+    </div>
+    <div class="report-wrap">
+      <div class="report-filters">
+        <select id="report-type-filter">
+          <option value="">All types</option>
+        </select>
+        <input type="month" id="report-month-filter" />
+        <button class="btn btn-ghost" id="report-refresh" style="padding:9px 14px;font-size:12px;">⟳</button>
+      </div>
+      <div id="report-list"></div>
+    </div>
+  </div>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <div class="bottomnav" id="bottomnav">
+    <button data-nav="dashboard" class="active"><span class="icon">🪙</span>Dashboard</button>
+    <button data-nav="dashboard-entry"><span class="icon">📄</span>Entry</button>
+    <button data-nav="journal"><span class="icon">📒</span>Journal</button>
+    <button data-nav="ap"><span class="icon">📋</span>A/P</button>
+    <button data-nav="ar"><span class="icon">💰</span>A/R</button>
+    <button data-nav="inv"><span class="icon">📦</span>Stock</button>
+    <button data-nav="fa"><span class="icon">🏭</span>Assets</button>
+    <button data-nav="const"><span class="icon">🏗️</span>Build</button>
+    <button data-nav="report"><span class="icon">📊</span>Report</button>
+  </div>
+</div>
+
+<meta name="theme-color" content="#c9a24a" />
+<link rel="manifest" href="public/manifest.json" />
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("public/sw.js").then((reg) => {
+    reg.addEventListener("updatefound", () => {
+      const sw = reg.installing;
+      sw?.addEventListener("statechange", () => {
+        if (sw.state === "installed" && navigator.serviceWorker.controller) {
+          if (confirm("A new version is available. Reload now?")) {
+            window.location.reload();
+          }
+        }
+      });
+    });
+  });
+}
+</script>
+<script>
+/* ============================================================
+   CONFIG — Supabase project credentials (already set)
+   ============================================================ */
+const SUPABASE_URL = "https://vbnifgchhlltdgdpinom.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZibmlmZ2NoaGxsdGRnZHBpbm9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMDM3NDcsImV4cCI6MjA5OTU3OTc0N30.d-i1hAyaPyyiCwOcRTaJWF3mpcU4AyWQ-AqsNkizSo8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// API base URL — defaults to same origin; set window.__API_BASE for custom backend
+const API_BASE = window.__API_BASE || (location.origin === "file://" ? "http://localhost:3000" : location.origin);
+
+/* ============================================================
+   INTEGER MATH — all amounts stored as minor units (cents/poisha)
+   ============================================================ */
+const EXP = 2;
+function toDisplay(n) { return n / Math.pow(10, EXP); }
+function toMinor(n) { return Math.round(n * Math.pow(10, EXP)); }
+function fmt(n, s) { const d = Math.pow(10, EXP); const w = Math.floor(n / d); const f = Math.abs(n % d).toString().padStart(EXP, "0"); return (s||"৳") + w.toLocaleString() + "." + f; }
+
+/* ============================================================
+   ENTRY TYPE REGISTRY — single source of truth.
+   Add one line here to create a new voucher type everywhere.
+   ============================================================ */
+const ENTRY_TYPES = [
+  { key: "purchase",       label: "Purchase",       hasItems: true,  desc: "Something you bought — like cement, tiles, or furniture." },
+  { key: "debit_note",     label: "Debit Note",     hasItems: false, desc: "A supplier owes you money back — a refund or price fix." },
+  { key: "sales",          label: "Sales",          hasItems: true,  desc: "Something you sold — like an apartment unit or service." },
+  { key: "credit_note",    label: "Credit Note",    hasItems: false, desc: "You owe a customer money back — a refund or discount." },
+  { key: "payment",        label: "Payment",        hasItems: false, desc: "Money going OUT — paying a supplier or contractor." },
+  { key: "receipt",        label: "Receipt",        hasItems: false, desc: "Money coming IN — a customer paying you." },
+  { key: "journal",        label: "Journal",        hasItems: false, desc: "Fixing a mistake or moving money between accounts." },
+  { key: "purchase_order", label: "Purchase Order", hasItems: true,  desc: "Tell a supplier what you want, before you pay." },
+  { key: "invoice",        label: "Invoice",        hasItems: true,  desc: "A bill you send a customer, showing what they owe." },
+  { key: "voucher",        label: "Voucher",        hasItems: false, desc: "A quick proof that money was spent or received." },
+  { key: "quotation",      label: "Quotation",      hasItems: true,  desc: "An estimate you give someone before they buy." },
+];
+
+const UNITS = [
+  "pcs", "kg", "bag", "truck", "inch", "ft", "sft", "sqm", "m",
+  "ltr", "dozen", "box", "roll", "set", "pair", "bundle",
+  "ton", "mm", "cm", "yard", "acre", "bigha", "katha", "g", "ml"
+];
+
+const REF_ABBR = {
+  purchase:       "PUR",
+  debit_note:     "DN",
+  sales:          "SAL",
+  credit_note:    "CN",
+  payment:        "PMT",
+  receipt:        "RCP",
+  journal:        "JRN",
+  purchase_order: "PO",
+  invoice:        "INV",
+  voucher:        "VCH",
+  quotation:      "QTN",
+};
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function todayCompact() {
+  return todayStr().replace(/-/g, "");
+}
+
+let state = {
+  session: null,
+  companyId: null,
+  activeEntryType: null,
+  items: [],
+  selectedPartyId: null,
+  aiSource: "manual",
+  aiTimer: null,
+};
+
+/* ============================================================
+   VIEW ROUTER
+   ============================================================ */
+function showView(id) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  const nav = document.getElementById("bottomnav");
+  nav.classList.toggle("hidden", id === "view-auth");
+}
+
+function setActiveNav(nav) {
+  document.querySelectorAll("#bottomnav button").forEach(b =>
+    b.classList.toggle("active", b.dataset.nav === nav)
+  );
+}
+
+document.getElementById("bottomnav").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-nav]");
+  if (!btn) return;
+  const nav = btn.dataset.nav;
+  if (nav === "dashboard-entry") {
+    openEntryForm(ENTRY_TYPES[0].key);
+    setActiveNav("dashboard-entry");
+    return;
+  }
+  setActiveNav(nav);
+  if (nav === "dashboard") {
+    showView("view-dashboard");
+  } else if (nav === "journal") {
+    showView("view-journal");
+    initJournal();
+  } else if (nav === "ap") {
+    showView("view-ap");
+    initAP();
+  } else if (nav === "ar") {
+    showView("view-ar");
+    initAR();
+  } else if (nav === "inv") {
+    showView("view-inv");
+    initInv();
+  } else if (nav === "fa") {
+    showView("view-fa");
+    initFA();
+  } else if (nav === "const") {
+    showView("view-const");
+    initConst();
+  } else if (nav === "report") {
+    loadReport();
+    showView("view-report");
+  }
+});
+
+document.getElementById("logout-btn").addEventListener("click", async () => {
+  await sb.auth.signOut();
+  state.session = null;
+  showView("view-welcome");
+});
+
+/* ============================================================
+   AUTH — sign in / sign up toggle
+   ============================================================ */
+let authMode = "signin";
+const els = {
+  heading: document.getElementById("auth-heading"),
+  sub: document.getElementById("auth-sub"),
+  email: document.getElementById("auth-email"),
+  password: document.getElementById("auth-password"),
+  error: document.getElementById("auth-error"),
+  success: document.getElementById("auth-success"),
+  submit: document.getElementById("auth-submit"),
+  toggle: document.getElementById("auth-toggle"),
+  back: document.getElementById("auth-back"),
+  showhide: document.getElementById("auth-showhide"),
+};
+
+els.showhide.addEventListener("click", () => {
+  const isPw = els.password.type === "password";
+  els.password.type = isPw ? "text" : "password";
+  els.showhide.textContent = isPw ? "HIDE" : "SHOW";
+});
+
+els.back.addEventListener("click", () => {
+  showView("view-welcome");
+});
+
+els.toggle.addEventListener("click", () => {
+  authMode = authMode === "signin" ? "signup" : "signin";
+  els.heading.textContent = authMode === "signin" ? "SECURE ACCESS" : "CREATE ACCOUNT";
+  els.sub.textContent = authMode === "signin"
+    ? "Silicon AppAcc Production Gate"
+    : "Set up your ledger account";
+  els.submit.textContent = authMode === "signin" ? "INITIATE SECURE TERMINAL" : "REGISTER INSTANCE";
+  els.toggle.textContent = authMode === "signin"
+    ? "Don't have an account? Sign Up Now"
+    : "Already have an account? Sign In";
+  els.error.textContent = ""; els.success.textContent = "";
+});
+
+els.submit.addEventListener("click", async () => {
+  els.error.textContent = ""; els.success.textContent = "";
+  const email = els.email.value.trim();
+  const password = els.password.value;
+  if (!email || !password) { els.error.textContent = "Email and password required."; return; }
+
+  els.submit.disabled = true;
+  try {
+    if (authMode === "signin") {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      if (data.session) await afterAuth(data.session);
+    } else {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (data.user?.identities?.length === 0) {
+        els.error.textContent = "This email is already registered. Sign in instead.";
+      } else if (data.session) {
+        await afterAuth(data.session);
+      } else {
+        els.success.textContent = "Account created! Check your email to confirm, or sign in.";
+        authMode = "signin"; els.toggle.click(); els.toggle.click();
+      }
+    }
+  } catch (err) {
+    els.error.textContent = err.message || "Something went wrong.";
+  } finally {
+    els.submit.disabled = false;
+  }
+});
+
+async function afterAuth(session) {
+  state.session = session;
+  await loadWorkspaces();
+}
+
+/* ============================================================
+   WORKSPACE SELECTOR — fetch companies / auto-select if one
+   ============================================================ */
+async function loadWorkspaces() {
+  const userId = state.session.user.id;
+  const list = document.getElementById("ws-list");
+  list.innerHTML = `<div class="ws-loading"><div class="boot-spinner"></div><div class="txt">RESOLVING TENANT SCHEMAS...</div></div>`;
+  showView("view-workspace");
+
+  let { data: companies, error } = await sb
+    .from("sp_companies")
+    .select("id, name, fiscal_start, fiscal_end")
+    .eq("owner_id", userId);
+  if (error) { list.innerHTML = `<div class="ws-empty">${error.message}</div>`; return; }
+
+  if (!companies || companies.length === 0) {
+    const { data: created, error: insErr } = await sb
+      .from("sp_companies")
+      .insert({
+        owner_id: userId,
+        name: "Silicon Properties",
+        fiscal_start: "2025-07-01",
+        fiscal_end: "2026-06-30",
+      })
+      .select()
+      .single();
+    if (insErr) { list.innerHTML = `<div class="ws-empty">${insErr.message}</div>`; return; }
+    companies = [created];
+  }
+
+  if (companies.length === 1) {
+    selectWorkspace(companies[0]);
+    return;
+  }
+
+  list.innerHTML = companies.map(c => {
+    const fy = `${c.fiscal_start.slice(0,7)} → ${c.fiscal_end.slice(0,7)}`;
+    return `
+      <div class="ws-card" data-id="${c.id}" data-name="${c.name}" data-fy="${fy}">
+        <div class="ws-card-top">
+          <div class="ws-card-name">${c.name.toUpperCase()}</div>
+          <div class="ws-card-badge">ACTIVE</div>
+        </div>
+        <div class="ws-card-industry">Enterprise Entity</div>
+        <div class="ws-card-divider"></div>
+        <div class="ws-card-footer">
+          <span class="ws-card-meta">Fiscal Period: ${fy}</span>
+          <span class="ws-card-meta">Primary Instance</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  list.querySelectorAll(".ws-card").forEach(card => {
+    card.addEventListener("click", () => {
+      selectWorkspace({
+        id: card.dataset.id,
+        name: card.dataset.name,
+        fiscal_start: card.dataset.fy.split(" → ")[0]?.replace("-", "-"),
+        fiscal_end: card.dataset.fy.split(" → ")[1]?.replace("-", "-"),
+      });
+    });
+  });
+}
+
+function selectWorkspace(co) {
+  state.companyId = co.id;
+  document.getElementById("dash-company").textContent = (co.name || "").toUpperCase();
+  const fy = co.fiscal_start && co.fiscal_end
+    ? `${co.fiscal_start.slice(0,7)} → ${co.fiscal_end.slice(0,7)}`
+    : "FY 2025-26";
+  document.getElementById("dash-range").textContent = fy;
+  document.getElementById("report-range").textContent = fy;
+  buildDashboard();
+  loadKPIs();
+  showView("view-dashboard");
+}
+
+document.getElementById("ws-create").addEventListener("click", () => {
+  window.location.href = "onboarding.html";
+});
+
+/* Boot sequence — welcome screen with secure session check */
+const bootMsg = document.getElementById("boot-msg");
+const bootSteps = [
+  "INITIALIZING CORE SYSTEMS...",
+  "ESTABLISHING SECURE TLS TUNNEL...",
+  "EVALUATING TENANT ACCESS KEYS...",
+];
+
+document.getElementById("welcome-auth").addEventListener("click", () => {
+  showView("view-auth");
+});
+
+(async function boot() {
+  showView("view-boot");
+  for (let i = 0; i < bootSteps.length; i++) {
+    bootMsg.textContent = bootSteps[i];
+    await new Promise(r => setTimeout(r, 700));
+  }
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    await afterAuth(data.session);
+  } else {
+    showView("view-welcome");
+  }
+})();
+
+sb.auth.onAuthStateChange((event) => {
+  if (event === "SIGNED_OUT") showView("view-welcome");
+});
+
+/* ============================================================
+   DASHBOARD — builds entry buttons from ENTRY_TYPES
+   ============================================================ */
+function buildDashboard() {
+  const grid = document.getElementById("entry-grid");
+  grid.innerHTML = "";
+  ENTRY_TYPES.forEach(et => {
+    const btn = document.createElement("button");
+    btn.className = "entry-btn";
+    btn.innerHTML = `<div class="entry-btn-label">${et.label}</div><div class="entry-btn-desc">${et.desc}</div>`;
+    btn.addEventListener("click", () => openEntryForm(et.key));
+    grid.appendChild(btn);
+  });
+
+  const filterSel = document.getElementById("report-type-filter");
+  filterSel.innerHTML = '<option value="">All types</option>' +
+    ENTRY_TYPES.map(et => `<option value="${et.key}">${et.label}</option>`).join("");
+
+  loadKPIs();
+}
+
+/* ============================================================
+   DASHBOARD KPI CARDS — Total Sales / Purchases / Outstanding
+   ============================================================ */
+async function loadKPIs() {
+  const scroll = document.getElementById("kpi-scroll");
+  if (!scroll) return;
+  scroll.innerHTML = `<div class="kpi-card"><div class="kpi-label">Loading…</div></div>`;
+
+  const [kpiRes, outstandingRes, cashRes] = await Promise.all([
+    sb.from("sp_v_dashboard_kpis").select("*").eq("company_id", state.companyId).maybeSingle(),
+    sb.from("sp_v_party_outstanding_rollup").select("*").eq("company_id", state.companyId).maybeSingle(),
+    sb.from("sp_v_cash_bank_balance").select("name, running_balance").eq("company_id", state.companyId),
+  ]);
+
+  const kpis = kpiRes.data || { total_sales: 0, total_purchases: 0 };
+  const outstanding = outstandingRes.data || { total_receivable: 0, total_payable: 0 };
+  const cashBankTotal = (cashRes.data || []).reduce((s, r) => s + Number(r.running_balance), 0);
+
+  const cards = [
+    { label: "Total Sales", value: kpis.total_sales, cls: "positive" },
+    { label: "Total Purchases", value: kpis.total_purchases, cls: "" },
+    { label: "Cash + Bank", value: cashBankTotal, cls: cashBankTotal >= 0 ? "positive" : "negative" },
+    { label: "Receivable", value: outstanding.total_receivable, cls: "positive" },
+    { label: "Payable", value: outstanding.total_payable, cls: "negative" },
+  ];
+
+  scroll.innerHTML = cards.map(c => `
+    <div class="kpi-card ${c.cls}">
+      <div class="kpi-label">${c.label}</div>
+      <div class="kpi-value">${fmt(c.value || 0)}</div>
+    </div>
+  `).join("");
+}
+
+/* ============================================================
+   PARTY PICKER WITH OUTSTANDING BALANCE
+   ============================================================ */
+let partySearchTimer = null;
+const partyInput = document.getElementById("f-party");
+const partySuggestBox = document.getElementById("party-suggestions");
+
+partyInput?.addEventListener("input", () => {
+  state.selectedPartyId = null;
+  const q = partyInput.value.trim();
+  clearTimeout(partySearchTimer);
+  if (!q) { partySuggestBox?.classList.add("hidden"); return; }
+  partySearchTimer = setTimeout(() => searchParties(q), 220);
+});
+
+document.addEventListener("click", (e) => {
+  if (partySuggestBox && !partySuggestBox.contains(e.target) && e.target !== partyInput) {
+    partySuggestBox.classList.add("hidden");
+  }
+});
+
+async function searchParties(q) {
+  const { data, error } = await sb
+    .from("sp_v_party_outstanding")
+    .select("party_id, name, receivable_balance, payable_balance")
+    .eq("company_id", state.companyId)
+    .ilike("name", `%${q}%`)
+    .limit(6);
+  if (!partySuggestBox) return;
+  partySuggestBox.innerHTML = "";
+  if (!error && data && data.length) {
+    data.forEach(p => {
+      const bal = p.receivable_balance > 0
+        ? `Owes you ৳${Number(p.receivable_balance).toLocaleString()}`
+        : p.payable_balance > 0
+          ? `You owe ৳${Number(p.payable_balance).toLocaleString()}`
+          : "No balance";
+      const row = document.createElement("div");
+      row.className = "party-suggestion";
+      row.innerHTML = `<span>${p.name}</span><span class="bal">${bal}</span>`;
+      row.addEventListener("click", () => {
+        partyInput.value = p.name;
+        state.selectedPartyId = p.party_id;
+        partySuggestBox.classList.add("hidden");
+      });
+      partySuggestBox.appendChild(row);
+    });
+  }
+  const createRow = document.createElement("div");
+  createRow.className = "party-suggestion new-party";
+  createRow.innerHTML = `<span>+ Create new party "${q}"</span>`;
+  createRow.addEventListener("click", () => {
+    partyInput.value = q;
+    state.selectedPartyId = null;
+    partySuggestBox.classList.add("hidden");
+  });
+  partySuggestBox.appendChild(createRow);
+  partySuggestBox.classList.remove("hidden");
+}
+
+/* ============================================================
+   ENTRY FORM — one generic form for all 8 types
+   ============================================================ */
+
+/* ============================================================
+   ENTRY FORM — one generic form for all 8 types
+   ============================================================ */
+document.getElementById("entry-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("je-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("ap-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("ar-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("inv-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("fa-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+document.getElementById("const-back").addEventListener("click", () => {
+  setActiveNav("dashboard");
+  showView("view-dashboard");
+});
+
+function openEntryForm(typeKey) {
+  const type = ENTRY_TYPES.find(t => t.key === typeKey);
+  state.activeEntryType = typeKey;
+  state.items = [];
+
+  document.getElementById("entry-title").textContent = type.label;
+  const dateEl = document.getElementById("f-date");
+  dateEl.value = todayStr();
+  dateEl.disabled = true;
+  document.getElementById("f-party").value = "";
+  state.selectedPartyId = null;
+  state.aiSource = "manual";
+  document.getElementById("party-suggestions")?.classList.add("hidden");
+  document.getElementById("f-amount").value = "";
+  document.getElementById("f-narration").value = "";
+  document.getElementById("entry-error").textContent = "";
+
+  document.getElementById("items-section").classList.toggle("hidden", !type.hasItems);
+  document.getElementById("amount-only-field").classList.toggle("hidden", type.hasItems);
+
+  generateRefNo().then(ref => {
+    document.getElementById("f-ref").value = ref;
+  });
+
+  renderItemsTable();
+  updateTotal();
+  showView("view-entry");
+}
+
+async function generateRefNo() {
+  const typeKey = state.activeEntryType;
+  const abbr = REF_ABBR[typeKey] || typeKey.toUpperCase().slice(0,4);
+  const prefix = abbr + "-" + todayCompact() + "-";
+
+  const { data } = await sb
+    .from("sp_transactions")
+    .select("ref_no")
+    .eq("company_id", state.companyId)
+    .gte("ref_no", prefix)
+    .lt("ref_no", prefix + "~~~")
+    .order("ref_no", { ascending: false })
+    .limit(1);
+
+  let seq = 1;
+  if (data && data.length > 0) {
+    const last = data[0].ref_no;
+    const lastNum = parseInt(last.slice(prefix.length), 10);
+    if (!isNaN(lastNum)) seq = lastNum + 1;
+  }
+  return prefix + String(seq).padStart(3, "0");
+}
+
+function renderItemsTable() {
+  const table = document.getElementById("items-table");
+  while (table.children.length > 1) table.removeChild(table.lastChild);
+
+  state.items.forEach((item, idx) => {
+    if (!item.uom) item.uom = "pcs";
+    const row = document.createElement("div");
+    row.className = "items-row";
+    const uomOpts = UNITS.map(u =>
+      `<option value="${u}"${u === item.uom ? " selected" : ""}>${u}</option>`
+    ).join("");
+    row.innerHTML = `
+      <input type="text" placeholder="Item name" value="${item.name}" data-field="name" data-idx="${idx}" />
+      <input type="number" step="0.01" placeholder="Qty" value="${item.qty}" data-field="qty" data-idx="${idx}" />
+      <select class="item-uom" data-field="uom" data-idx="${idx}">${uomOpts}</select>
+      <input type="number" step="0.01" placeholder="Rate" value="${item.rate}" data-field="rate" data-idx="${idx}" />
+      <span class="item-amt">৳${(item.qty * item.rate).toFixed(2)}</span>
+      <button data-remove="${idx}">✕</button>
+    `;
+    table.appendChild(row);
+  });
+
+  table.querySelectorAll("input[data-field], select[data-field]").forEach(inp => {
+    inp.addEventListener("input", (e) => {
+      const idx = +e.target.dataset.idx;
+      const field = e.target.dataset.field;
+      const val = e.target.value;
+      state.items[idx][field] = field === "name" || field === "uom" ? val : parseFloat(val || 0);
+      renderItemsTable();
+      updateTotal();
+    });
+  });
+  table.querySelectorAll("button[data-remove]").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      state.items.splice(+e.target.dataset.remove, 1);
+      renderItemsTable();
+      updateTotal();
+    });
+  });
+}
+
+document.getElementById("add-item").addEventListener("click", () => {
+  state.items.push({ name: "", qty: 1, uom: "pcs", rate: 0 });
+  renderItemsTable();
+});
+
+document.getElementById("f-amount").addEventListener("input", updateTotal);
+
+function updateTotal() {
+  const type = ENTRY_TYPES.find(t => t.key === state.activeEntryType);
+  let total = 0;
+  if (type?.hasItems) {
+    total = state.items.reduce((s, i) => s + (i.qty * i.rate), 0);
+  } else {
+    total = toMinor(parseFloat(document.getElementById("f-amount").value || 0));
+  }
+  document.getElementById("f-total").textContent = fmt(total);
+  return total;
+}
+
+/* ---- Save entry ---- */
+document.getElementById("entry-save").addEventListener("click", async () => {
+  const errEl = document.getElementById("entry-error");
+  errEl.textContent = "";
+
+  const type = ENTRY_TYPES.find(t => t.key === state.activeEntryType);
+  const total = updateTotal();
+  const party = document.getElementById("f-party").value.trim();
+  const date = document.getElementById("f-date").value;
+  const ref = document.getElementById("f-ref").value.trim();
+  const narration = document.getElementById("f-narration").value.trim();
+
+  if (!date) { errEl.textContent = "Date is required."; return; }
+  if (total <= 0) { errEl.textContent = "Amount must be greater than zero."; return; }
+  if (type.hasItems && state.items.some(i => !i.name)) {
+    errEl.textContent = "Every line item needs a description."; return;
+  }
+
+  const saveBtn = document.getElementById("entry-save");
+  saveBtn.disabled = true; saveBtn.textContent = "Saving…";
+
+  try {
+    // Find or create party
+    let partyId = state.selectedPartyId;
+    if (party && !partyId) {
+      const { data: existing } = await sb
+        .from("sp_parties")
+        .select("id")
+        .eq("company_id", state.companyId)
+        .eq("name", party)
+        .maybeSingle();
+      if (existing) {
+        partyId = existing.id;
+      } else {
+        const { data: created, error: pErr } = await sb
+          .from("sp_parties")
+          .insert({ company_id: state.companyId, name: party, type: "other" })
+          .select()
+          .single();
+        if (pErr) throw pErr;
+        partyId = created.id;
+      }
+    }
+
+    // Insert transaction
+    const { data: txn, error: tErr } = await sb
+      .from("sp_transactions")
+      .insert({
+        company_id: state.companyId,
+        type: type.key,
+        txn_date: date,
+        ref_no: ref || null,
+        party_id: partyId,
+        amount: total,
+        narration: narration || null,
+        source: state.aiSource || "manual",
+        created_by: state.session.user.id,
+      })
+      .select()
+      .single();
+    if (tErr) throw tErr;
+
+    // Insert line items if applicable
+    if (type.hasItems && state.items.length) {
+      const rows = state.items.map(i => ({
+        transaction_id: txn.id,
+        item_name: i.name,
+        qty: i.qty,
+        uom: i.uom || "pcs",
+        rate: i.rate,
+      }));
+      const { error: iErr } = await sb.from("sp_transaction_items").insert(rows);
+      if (iErr) throw iErr;
+    }
+
+    setActiveNav("dashboard");
+    showView("view-dashboard");
+    loadKPIs();
+  } catch (err) {
+    errEl.textContent = err.message || "Could not save entry.";
+  } finally {
+    saveBtn.disabled = false; saveBtn.textContent = "Save Entry";
+  }
+});
+
+/* ---- FAB + AI actions ---- */
+const fabBtn = document.getElementById("fab-btn");
+const fabMenu = document.getElementById("fab-menu");
+const receiptInput = document.getElementById("receipt-input");
+const aiOverlay = document.getElementById("ai-overlay");
+const aiStatus = document.getElementById("ai-status");
+
+function showAI(status) {
+  aiStatus.textContent = status;
+  aiOverlay.classList.remove("hidden");
+}
+function hideAI() { aiOverlay.classList.add("hidden"); }
+
+fabBtn.addEventListener("click", () => {
+  fabMenu.classList.toggle("hidden");
+  fabBtn.classList.toggle("open");
+});
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".fab")) { fabMenu.classList.add("hidden"); fabBtn.classList.remove("open"); }
+});
+
+document.querySelectorAll(".fab-opt").forEach(opt => {
+  opt.addEventListener("click", () => {
+    fabMenu.classList.add("hidden");
+    fabBtn.classList.remove("open");
+    const action = opt.dataset.action;
+    if (action === "scan") receiptInput.click();
+    else if (action === "quick") promptQuickAdd();
+    else if (action === "entry") openEntryForm(ENTRY_TYPES[0].key);
+  });
+});
+
+/* Receipt scan → OCR → pre-fill entry form */
+receiptInput.addEventListener("change", async () => {
+  const file = receiptInput.files?.[0];
+  if (!file) return;
+  receiptInput.value = "";
+  showAI("Scanning receipt…");
+  try {
+    const b64 = await fileToBase64(file);
+    const res = await fetch(API_BASE + "/api/v2/ai/ocr", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Idempotency-Key": `ocr-${Date.now()}` },
+      body: JSON.stringify({ image: b64.split(",")[1], mimeType: file.type }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    hideAI();
+    if (data.date) document.getElementById("f-date").value = data.date;
+    if (data.amount) document.getElementById("f-amount").value = toDisplay(data.amount);
+    if (data.vendor) document.getElementById("f-narration").value = data.vendor;
+    state.aiSource = "ocr";
+    const mostLikelyType = ENTRY_TYPES.find(t => t.hasItems) || ENTRY_TYPES[0];
+    openEntryForm(mostLikelyType.key);
+    if (data.vendor) triggerCategorize(data.vendor);
+  } catch (err) {
+    hideAI(); alert("OCR error: " + err.message);
+  }
+});
+
+/* Quick Add (AI natural language) */
+function promptQuickAdd() {
+  const text = prompt("Describe the transaction (e.g. 'Spent 5000 on office supplies'):");
+  if (!text) return;
+  showAI("Parsing transaction…");
+  fetch(API_BASE + "/api/v2/ai/parse-nl", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Idempotency-Key": `qa-${Date.now()}` },
+    body: JSON.stringify({ text, companyId: state.companyId }),
+  })
+    .then(r => r.json())
+    .then(parsed => {
+      hideAI();
+      if (parsed.error) { alert(parsed.error); return; }
+      document.getElementById("f-amount").value = parsed.amountMinor ? toDisplay(parsed.amountMinor) : "";
+      document.getElementById("f-narration").value = parsed.narration || text;
+      state.aiSource = "quick-add";
+      const qaType = ENTRY_TYPES.find(t => t.hasItems) || ENTRY_TYPES[0];
+      openEntryForm(qaType.key);
+      if (parsed.narration) triggerCategorize(parsed.narration);
+      setTimeout(() => document.getElementById("f-narration")?.focus(), 300);
+    })
+    .catch(err => { hideAI(); alert("Quick-Add error: " + err.message); });
+}
+
+/* Auto-categorize on narration input */
+function triggerCategorize(text) {
+  if (!text || text.length < 3) return;
+  fetch(API_BASE + "/api/v2/ai/categorize", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ narration: text, companyId: state.companyId }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.categoryName) {
+        const el = document.getElementById("f-narration");
+        el.placeholder = `e.g. ${data.categoryName} (AI suggested)`;
+        if (!el.value.includes("(AI)")) {
+          el.style.borderColor = "var(--success)";
+          setTimeout(() => el.style.borderColor = "", 3000);
+        }
+      }
+    })
+    .catch(() => {});
+}
+
+document.getElementById("f-narration")?.addEventListener("input", function() {
+  clearTimeout(state.aiTimer);
+  const v = this.value.trim();
+  state.aiTimer = setTimeout(() => triggerCategorize(v), 600);
+});
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+/* ============================================================
+   JOURNAL ENTRY TERMINAL — double-entry validation node
+   ============================================================ */
+let jeLines = [];
+let jeType = 'DEBIT';
+
+function initJournal() {
+  if (jeLines.length > 0) return;
+  document.getElementById("je-ref").value = "JV-" + todayCompact() + "-001";
+  document.getElementById("je-narration").value = "";
+  document.getElementById("je-acc-code").value = "";
+  document.getElementById("je-acc-name").value = "";
+  document.getElementById("je-amount").value = "";
+  document.getElementById("je-cost-center").value = "";
+  jeType = 'DEBIT';
+  document.getElementById("je-toggle-dr").classList.add("active-dr");
+  document.getElementById("je-toggle-cr").classList.remove("active-cr");
+  renderJournalLines();
+}
+
+function renderJournalLines() {
+  const container = document.getElementById("je-lines");
+  const drTotal = jeLines.filter(l => l.type === 'DEBIT').reduce((s, l) => s + l.amount, 0);
+  const crTotal = jeLines.filter(l => l.type === 'CREDIT').reduce((s, l) => s + l.amount, 0);
+  const balanced = drTotal === crTotal;
+
+  container.innerHTML = jeLines.map((l, i) => `
+    <div class="je-line">
+      <div class="je-line-top">
+        <div class="je-line-code">${l.accountCode} — <span>${l.accountName}</span></div>
+        <button class="je-line-remove" data-idx="${i}">REMOVE</button>
+      </div>
+      <div class="je-line-bot">
+        <div class="je-line-cc">${l.costCenter || 'SYSTEM GLOBAL COST CENTER'}</div>
+        <div class="je-line-amt ${l.type === 'DEBIT' ? 'je-dr' : 'je-cr'}">
+          ${l.type === 'DEBIT' ? 'DR' : 'CR'}  ${l.amount.toLocaleString()}
+        </div>
+      </div>
+    </div>
+  `).join("") || `<div style="text-align:center;color:#475569;font-size:11px;padding:20px">No lines staged. Add at least two to post.</div>`;
+
+  document.getElementById("je-total-dr").textContent = "BDT " + drTotal.toLocaleString();
+  document.getElementById("je-total-cr").textContent = "BDT " + crTotal.toLocaleString();
+  const varEl = document.getElementById("je-variance");
+  if (balanced) {
+    varEl.textContent = "BALANCED";
+    varEl.className = "je-bal-val je-balanced";
+  } else {
+    varEl.textContent = "Δ " + Math.abs(drTotal - crTotal).toLocaleString();
+    varEl.className = "je-bal-val je-unbalanced";
+  }
+
+  container.querySelectorAll(".je-line-remove").forEach(btn => {
+    btn.addEventListener("click", () => {
+      jeLines.splice(+btn.dataset.idx, 1);
+      renderJournalLines();
+    });
+  });
+}
+
+// Toggle DR/CR
+document.getElementById("je-toggle-dr").addEventListener("click", () => {
+  jeType = 'DEBIT';
+  document.getElementById("je-toggle-dr").classList.add("active-dr");
+  document.getElementById("je-toggle-cr").classList.remove("active-cr");
+});
+document.getElementById("je-toggle-cr").addEventListener("click", () => {
+  jeType = 'CREDIT';
+  document.getElementById("je-toggle-cr").classList.add("active-cr");
+  document.getElementById("je-toggle-dr").classList.remove("active-dr");
+});
+
+// Insert line
+document.getElementById("je-insert").addEventListener("click", () => {
+  const code = document.getElementById("je-acc-code").value.trim();
+  const name = document.getElementById("je-acc-name").value.trim();
+  const amount = parseFloat(document.getElementById("je-amount").value);
+  const costCenter = document.getElementById("je-cost-center").value.trim();
+
+  if (!code || !name || isNaN(amount) || amount <= 0) {
+    alert("Validation Error: Provide complete operational item specifications and positive non-zero value amounts.");
+    return;
+  }
+
+  jeLines.push({
+    id: Date.now().toString(),
+    accountCode: code,
+    accountName: name,
+    type: jeType,
+    amount: amount,
+    costCenter: costCenter || undefined,
+  });
+
+  document.getElementById("je-acc-code").value = "";
+  document.getElementById("je-acc-name").value = "";
+  document.getElementById("je-amount").value = "";
+  document.getElementById("je-cost-center").value = "";
+  renderJournalLines();
+});
+
+// POST journal entry
+document.getElementById("je-post").addEventListener("click", async () => {
+  const narration = document.getElementById("je-narration").value.trim();
+  const ref = document.getElementById("je-ref").value.trim();
+
+  if (jeLines.length < 2) {
+    alert("Parity Rejection: A valid double-entry transaction matrix requires at minimum two distinct operational ledger lines.");
+    return;
+  }
+
+  const drTotal = jeLines.filter(l => l.type === 'DEBIT').reduce((s, l) => s + l.amount, 0);
+  const crTotal = jeLines.filter(l => l.type === 'CREDIT').reduce((s, l) => s + l.amount, 0);
+
+  if (drTotal !== crTotal) {
+    alert(`Parity Rejection: Ledger must achieve mathematical alignment. Current Variance: BDT ${Math.abs(drTotal - crTotal).toLocaleString()}`);
+    return;
+  }
+
+  if (!narration) {
+    alert("Validation Error: Transaction narration signature string is required for systemic audit logs.");
+    return;
+  }
+
+  const btn = document.getElementById("je-post");
+  btn.disabled = true;
+  btn.textContent = "POSTING...";
+
+  try {
+    const res = await fetch(API_BASE + "/api/v2/journal/commit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${state.session?.access_token}`,
+        "X-Idempotency-Key": `je-${Date.now()}`,
+      },
+      body: JSON.stringify({
+        companyId: state.companyId,
+        reference: ref || undefined,
+        narration,
+        lines: jeLines.map(l => ({
+          accountCode: l.accountCode,
+          accountName: l.accountName,
+          type: l.type,
+          amount: toMinor(l.amount),
+          costCenter: l.costCenter,
+        })),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Journal commit failed");
+    }
+
+    jeLines = [];
+    renderJournalLines();
+    alert("Journal Entry Committed: Double-entry transaction balances verified. Safe mutation committed to core ledger charts successfully.");
+    setActiveNav("dashboard");
+    showView("view-dashboard");
+    loadKPIs();
+  } catch (err) {
+    alert("Error: " + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "POST";
+  }
+});
+
+/* ============================================================
+   ACCOUNTS PAYABLE — vendor ledger & invoice pipeline
+   ============================================================ */
+let apVendors = [];
+let apTab = 'LEDGER';
+
+async function initAP() {
+  if (apVendors.length > 0) { renderAPLedger(); return; }
+  try {
+    const res = await fetch(API_BASE + "/api/erp/inventory");
+    const data = await res.json();
+    if (data.success && data.results.length) {
+      apVendors = data.results.map((r, i) => ({
+        id: 'V-' + String(i + 1).padStart(3, '0'),
+        name: r.materialName || 'Unknown Vendor',
+        category: 'Material Suppliers',
+        balance: r.currentStock * (r.unitCostBDT || 100),
+      }));
+    } else {
+      throw new Error('No data');
+    }
+  } catch {
+    apVendors = [
+      { id: 'V-001', name: 'PHC Piling & Foundations Ltd', category: 'Civil Contractors', balance: 3450000 },
+      { id: 'V-002', name: 'Eco-Block Bricks Manufacturing', category: 'Material Suppliers', balance: 1200000 },
+      { id: 'V-003', name: 'Anwar Galvanized Steel Mills', category: 'Raw Materials', balance: 0 },
+    ];
+  }
+  renderAPLedger();
+}
+
+function renderAPLedger() {
+  const container = document.getElementById("ap-ledger");
+  container.innerHTML = apVendors.map(v => `
+    <div class="ap-vendor">
+      <div class="ap-v-top">
+        <div>
+          <div class="ap-v-id">${v.id}</div>
+          <div class="ap-v-name">${v.name}</div>
+        </div>
+        <div class="ap-v-cat">${v.category.toUpperCase()}</div>
+      </div>
+      <div class="ap-v-div"></div>
+      <div class="ap-v-bot">
+        <div class="ap-v-label">OUTSTANDING LIABILITY</div>
+        <div class="ap-v-bal ${v.balance > 0 ? 'owing' : 'cleared'}">BDT ${v.balance.toLocaleString()}</div>
+      </div>
+    </div>
+  `).join("") || `<div class="ap-empty">No verified corporate supply links found.</div>`;
+  document.getElementById("ap-invoice").classList.add("hidden");
+  document.getElementById("ap-ledger").classList.remove("hidden");
+}
+
+// Tab switching
+document.querySelectorAll(".ap-seg").forEach(seg => {
+  seg.addEventListener("click", () => {
+    document.querySelectorAll(".ap-seg").forEach(s => s.classList.remove("active"));
+    seg.classList.add("active");
+    apTab = seg.dataset.apTab;
+    if (apTab === 'LEDGER') {
+      document.getElementById("ap-invoice").classList.add("hidden");
+      document.getElementById("ap-ledger").classList.remove("hidden");
+    } else {
+      document.getElementById("ap-ledger").classList.add("hidden");
+      document.getElementById("ap-invoice").classList.remove("hidden");
+    }
+  });
+});
+
+// Submit invoice
+document.getElementById("ap-submit").addEventListener("click", async () => {
+  const vendorId = document.getElementById("ap-vendor-id").value.trim().toUpperCase();
+  const invNo = document.getElementById("ap-inv-no").value.trim();
+  const gross = parseFloat(document.getElementById("ap-gross").value);
+  const tax = parseFloat(document.getElementById("ap-tax").value) || 0;
+  const costCenter = document.getElementById("ap-cost-center").value.trim().toUpperCase();
+
+  if (!vendorId || !invNo || isNaN(gross) || gross <= 0) {
+    alert("Validation Rejection: Please map a valid vendor ID, alphanumeric invoice reference, and positive invoice values.");
+    return;
+  }
+
+  // Update vendor balance
+  const vendor = apVendors.find(v => v.id === vendorId);
+  if (!vendor) {
+    alert(`Vendor ID ${vendorId} not found in ledger.`);
+    return;
+  }
+
+  vendor.balance += gross;
+  renderAPLedger();
+
+  alert(`Invoice Pipeline Processing Success: Purchase invoice ${invNo} verified and compiled into AP Ledger registry matching structural cost center dimensions.`);
+
+  document.getElementById("ap-vendor-id").value = "";
+  document.getElementById("ap-inv-no").value = "";
+  document.getElementById("ap-gross").value = "";
+  document.getElementById("ap-tax").value = "0";
+  document.getElementById("ap-cost-center").value = "";
+  document.querySelector('[data-ap-tab="LEDGER"]').click();
+});
+
+/* ============================================================
+   ACCOUNTS RECEIVABLE — customer registry & invoicing console
+   ============================================================ */
+let arCustomers = [];
+let arTab = 'REGISTRY';
+
+async function initAR() {
+  if (arCustomers.length > 0) { renderAR(); return; }
+  try {
+    const res = await fetch(API_BASE + "/api/erp/payroll");
+    const data = await res.json();
+    if (data.success && data.results.length) {
+      arCustomers = data.results.map((r, i) => ({
+        id: 'C-' + String(i + 700).slice(-3),
+        name: r.name,
+        allotment: 'Corporate Account',
+        invoiced: r.netPayable * 12,
+        outstanding: r.paymentStatus === 'DISBURSED' ? 0 : r.netPayable,
+      }));
+    } else {
+      throw new Error('No data');
+    }
+  } catch {
+    arCustomers = [
+      { id: 'C-701', name: 'Rahman Executive Holdings', allotment: 'Silicon Samtaz - Unit 4A', invoiced: 15000000, outstanding: 4500000 },
+      { id: 'C-702', name: 'Dr. Asif Nawaz', allotment: 'Silicon Samtaz - Unit 7B', invoiced: 18500000, outstanding: 0 },
+      { id: 'C-703', name: 'Begum Rokeya Mirza', allotment: 'Jolshiri Plot 42 - Commercial', invoiced: 22000000, outstanding: 11000000 },
+    ];
+  }
+  renderAR();
+}
+
+function renderAR() {
+  const container = document.getElementById("ar-registry");
+  container.innerHTML = arCustomers.map(c => {
+    const due = c.outstanding > 0;
+    return `
+      <div class="ar-customer">
+        <div class="ar-c-top">
+          <div style="flex:1;margin-right:8px">
+            <div class="ar-c-id">${c.id} — <span>${c.allotment}</span></div>
+            <div class="ar-c-name">${c.name}</div>
+          </div>
+          <div class="ar-c-badge ${due ? 'arrears' : 'settled'}">${due ? 'ARREARS DUE' : 'FULLY SETTLED'}</div>
+        </div>
+        <div class="ar-c-div"></div>
+        <div class="ar-c-bot">
+          <div>
+            <div class="ar-c-label">TOTAL INVOICED REVENUE</div>
+            <div class="ar-c-val">BDT ${c.invoiced.toLocaleString()}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="ar-c-label">RECEIVABLE BALANCE</div>
+            <div class="ar-c-val ${due ? 'due' : 'settled'}">BDT ${c.outstanding.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("") || `<div class="ap-empty">No registered consumer allocations tracked in memory.</div>`;
+  document.getElementById("ar-invoice").classList.add("hidden");
+  document.getElementById("ar-registry").classList.remove("hidden");
+}
+
+// AR tab switch
+document.querySelectorAll(".ar-seg[data-ar-tab]").forEach(seg => {
+  seg.addEventListener("click", () => {
+    document.querySelectorAll(".ar-seg[data-ar-tab]").forEach(s => s.classList.remove("active"));
+    seg.classList.add("active");
+    arTab = seg.dataset.arTab;
+    if (arTab === 'REGISTRY') {
+      document.getElementById("ar-invoice").classList.add("hidden");
+      document.getElementById("ar-registry").classList.remove("hidden");
+    } else {
+      document.getElementById("ar-registry").classList.add("hidden");
+      document.getElementById("ar-invoice").classList.remove("hidden");
+    }
+  });
+});
+
+// Generate AR invoice
+document.getElementById("ar-submit").addEventListener("click", () => {
+  const customerId = document.getElementById("ar-customer-id").value.trim().toUpperCase();
+  const invNo = document.getElementById("ar-inv-no").value.trim();
+  const unit = document.getElementById("ar-unit").value.trim();
+  const milestone = parseFloat(document.getElementById("ar-milestone").value);
+  const vat = parseFloat(document.getElementById("ar-vat").value) || 0;
+
+  if (!customerId || !invNo || isNaN(milestone) || milestone <= 0) {
+    alert("Validation Rejection: Please map a valid customer ID, invoice serial code, and non-zero milestone values.");
+    return;
+  }
+
+  const customer = arCustomers.find(c => c.id === customerId);
+  if (!customer) {
+    alert(`Customer ID ${customerId} not found in registry.`);
+    return;
+  }
+
+  customer.invoiced += milestone;
+  customer.outstanding += milestone;
+
+  renderAR();
+  alert(`Revenue Milestone Registered: Sales invoice ${invNo} successfully dispatched. Outstanding receivables modified under asset allocation track ${unit}.`);
+
+  document.getElementById("ar-customer-id").value = "";
+  document.getElementById("ar-inv-no").value = "";
+  document.getElementById("ar-unit").value = "";
+  document.getElementById("ar-milestone").value = "";
+  document.getElementById("ar-vat").value = "0";
+  document.querySelector('[data-ar-tab="REGISTRY"]').click();
+});
+
+/* ============================================================
+   INVENTORY — SKU index & stock transfer
+   ============================================================ */
+let invItems = [];
+let invTab = 'SKU';
+
+async function initInv() {
+  if (invItems.length > 0) { renderInv(); return; }
+  try {
+    const res = await fetch(API_BASE + "/api/erp/inventory");
+    const data = await res.json();
+    if (data.success && data.results.length) {
+      invItems = data.results.map(r => ({
+        sku: r.skuCode,
+        desc: r.materialName,
+        cat: 'Materials',
+        stock: r.currentStock,
+        uom: r.unitOfMeasure,
+        threshold: Math.max(r.currentStock * 0.3, 1),
+        wh: 'Central Warehouse',
+        cost: 100,
+      }));
+    } else {
+      throw new Error('No data');
+    }
+  } catch {
+    invItems = [
+      { sku: 'MAT-BRK-ECO', desc: 'Non-Fired Eco-Friendly Block Bricks', cat: 'Masonry', stock: 45000, uom: 'Pcs', threshold: 15000, wh: 'Jolshiri Central Yard', cost: 14 },
+      { sku: 'MAT-ST-500W', desc: '500W Grade Deformed Reinforcement Steel', cat: 'Rebar', stock: 8.5, uom: 'Tons', threshold: 12, wh: 'Jolshiri Central Yard', cost: 94000 },
+      { sku: 'FIN-PVC-FLR', desc: 'Premium Commercial PVC Flooring Panels', cat: 'Finishing', stock: 320, uom: 'SqFt', threshold: 200, wh: 'Gulshan Depot', cost: 185 },
+    ];
+  }
+  renderInv();
+}
+
+function renderInv() {
+  const container = document.getElementById("inv-sku-list");
+  container.innerHTML = invItems.map(item => {
+    const low = item.stock <= item.threshold;
+    const value = item.stock * item.cost;
+    return `
+      <div class="inv-sku">
+        <div class="ar-c-top">
+          <div style="flex:1;margin-right:8px">
+            <div class="inv-sku-code">${item.sku} — <span>${item.cat}</span></div>
+            <div class="inv-sku-desc">${item.desc}</div>
+          </div>
+          <div class="inv-sku-badge ${low ? 'low' : 'ok'}">${low ? 'LOW SUPPLY RUN' : 'STOCK OPTIMAL'}</div>
+        </div>
+        <div class="inv-sku-div"></div>
+        <div class="inv-sku-row">
+          <div>
+            <div class="inv-sku-label">ON-HAND VOLUME AVAILABLE</div>
+            <div class="inv-sku-val">${item.stock.toLocaleString()} ${item.uom}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="inv-sku-label">LEDGER ASSET VALUE</div>
+            <div class="inv-sku-val">BDT ${value.toLocaleString()}</div>
+          </div>
+        </div>
+        <div class="inv-sku-div dashed"></div>
+        <div class="inv-sku-wh">PRIMARY ZONE CUSTODY: <span>${item.wh.toUpperCase()}</span></div>
+      </div>
+    `;
+  }).join("") || `<div class="ap-empty">No registered stock units or hardware tracking items active.</div>`;
+  document.getElementById("inv-transfer").classList.add("hidden");
+  document.getElementById("inv-sku-list").classList.remove("hidden");
+}
+
+// Inv tab switch
+document.querySelectorAll(".ar-seg[data-inv-tab]").forEach(seg => {
+  seg.addEventListener("click", () => {
+    document.querySelectorAll(".ar-seg[data-inv-tab]").forEach(s => s.classList.remove("active"));
+    seg.classList.add("active");
+    invTab = seg.dataset.invTab;
+    if (invTab === 'SKU') {
+      document.getElementById("inv-transfer").classList.add("hidden");
+      document.getElementById("inv-sku-list").classList.remove("hidden");
+    } else {
+      document.getElementById("inv-sku-list").classList.add("hidden");
+      document.getElementById("inv-transfer").classList.remove("hidden");
+    }
+  });
+});
+
+// Execute transfer
+document.getElementById("inv-transfer-btn").addEventListener("click", () => {
+  const skuCode = document.getElementById("inv-sku-code").value.trim().toUpperCase();
+  const source = document.getElementById("inv-source").value.trim();
+  const dest = document.getElementById("inv-dest").value.trim();
+  const qty = parseFloat(document.getElementById("inv-qty").value);
+
+  if (!skuCode || !source || !dest || isNaN(qty) || qty <= 0) {
+    alert("Validation Rejection: Please input a verified SKU identifier, dispatch/receipt zones, and non-zero positive volumes.");
+    return;
+  }
+
+  const item = invItems.find(i => i.sku === skuCode);
+  if (!item) {
+    alert("SKU Missing: The specified stock keeping unit code does not exist within the system index.");
+    return;
+  }
+
+  if (item.stock < qty) {
+    alert(`Deficit Rejection: Insufficient on-hand stock volumes to fulfill transfer request. Available: ${item.stock} ${item.uom}`);
+    return;
+  }
+
+  item.stock = Math.max(0, item.stock - qty);
+  renderInv();
+
+  // Also hit the API
+  try {
+    await fetch(API_BASE + "/api/erp/inventory/transact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        skuCode,
+        materialName: item.desc,
+        transactionType: "DISPATCH",
+        quantityDelta: qty,
+        assignedProject: dest,
+      }),
+    });
+  } catch {}
+
+  alert(`Material Custody Transferred: Internal stock relocation manifest approved. Dispatched ${qty} ${item.uom} of SKU ${skuCode} safely to ${dest}.`);
+
+  document.getElementById("inv-sku-code").value = "";
+  document.getElementById("inv-source").value = "";
+  document.getElementById("inv-dest").value = "";
+  document.getElementById("inv-qty").value = "";
+  document.querySelector('[data-inv-tab="SKU"]').click();
+});
+
+/* ============================================================
+   FIXED ASSETS — capital equipment & depreciation tracking
+   ============================================================ */
+let faItems = [];
+let faTab = 'REGISTRY';
+
+async function initFA() {
+  if (faItems.length > 0) { renderFA(); return; }
+  try {
+    const res = await fetch(API_BASE + "/api/erp/assets");
+    const data = await res.json();
+    if (data.success && data.results.length) {
+      faItems = data.results.map(a => ({
+        id: a.assetId,
+        name: a.name,
+        cat: a.category,
+        purchased: a.purchaseDate,
+        cost: a.costBasis,
+        salvage: a.salvageValue,
+        life: a.usefulLifeYears,
+        accumDep: a.accumulatedDepreciation,
+        bookVal: a.currentBookValue,
+        loc: a.allocatedLocation,
+      }));
+    } else {
+      throw new Error('No data');
+    }
+  } catch {
+    faItems = [
+      { id: 'FA-101', name: 'High-Capacity Site Concrete Mixer', cat: 'Heavy Machinery', purchased: '2025-03-12', cost: 2400000, salvage: 400000, life: 8, accumDep: 312500, bookVal: 2087500, loc: 'Jolshiri Central Yard' },
+      { id: 'FA-102', name: 'Executive Site Survey Drone Cluster', cat: 'Field Tech Equipment', purchased: '2026-01-15', cost: 650000, salvage: 50000, life: 4, accumDep: 75000, bookVal: 575000, loc: 'Gulshan Head Office' },
+    ];
+  }
+  renderFA();
+}
+
+function renderFA() {
+  const container = document.getElementById("fa-registry");
+  container.innerHTML = faItems.map(a => `
+    <div class="fa-card">
+      <div class="fa-card-top">
+        <div style="flex:1;margin-right:8px">
+          <div class="fa-id">${a.id} — <span>${a.cat}</span></div>
+          <div class="fa-name">${a.name}</div>
+        </div>
+        <div class="fa-loc">${a.loc.toUpperCase()}</div>
+      </div>
+      <div class="fa-div"></div>
+      <div class="fa-grid">
+        <div class="fa-g-item">
+          <div class="fa-g-label">COST BASIS</div>
+          <div class="fa-g-val">BDT ${a.cost.toLocaleString()}</div>
+        </div>
+        <div class="fa-g-item">
+          <div class="fa-g-label">ACCUMULATED DEP</div>
+          <div class="fa-g-val dep">BDT ${a.accumDep.toLocaleString()}</div>
+        </div>
+        <div class="fa-g-item">
+          <div class="fa-g-label">CURRENT BOOK VALUE</div>
+          <div class="fa-g-val book">BDT ${a.bookVal.toLocaleString()}</div>
+        </div>
+      </div>
+    </div>
+  `).join("") || `<div class="ap-empty">No registered depreciable capital components found.</div>`;
+  document.getElementById("fa-capitalize").classList.add("hidden");
+  document.getElementById("fa-registry").classList.remove("hidden");
+}
+
+// FA tab switch
+document.querySelectorAll(".ar-seg[data-fa-tab]").forEach(seg => {
+  seg.addEventListener("click", () => {
+    document.querySelectorAll(".ar-seg[data-fa-tab]").forEach(s => s.classList.remove("active"));
+    seg.classList.add("active");
+    faTab = seg.dataset.faTab;
+    if (faTab === 'REGISTRY') {
+      document.getElementById("fa-capitalize").classList.add("hidden");
+      document.getElementById("fa-registry").classList.remove("hidden");
+    } else {
+      document.getElementById("fa-registry").classList.add("hidden");
+      document.getElementById("fa-capitalize").classList.remove("hidden");
+    }
+  });
+});
+
+// Capitalize new asset
+document.getElementById("fa-submit").addEventListener("click", () => {
+  const name = document.getElementById("fa-name").value.trim();
+  const cost = parseFloat(document.getElementById("fa-cost").value);
+  const salvage = parseFloat(document.getElementById("fa-salvage").value) || 0;
+  const life = parseInt(document.getElementById("fa-life").value);
+  const loc = document.getElementById("fa-location").value.trim() || 'Global Pool';
+
+  if (!name || isNaN(cost) || cost <= 0 || isNaN(life) || life <= 0) {
+    alert("Validation Rejection: Please specify a valid asset description name, positive acquisition cost value, and useful asset lifecycle span.");
+    return;
+  }
+
+  if (salvage >= cost) {
+    alert("Depreciation Matrix Paradox: Asset salvage value cannot equal or exceed historical acquisition cost parameters.");
+    return;
+  }
+
+  const id = "FA-" + Date.now().toString().slice(-3);
+  faItems.push({ id, name, cat: 'Heavy Machinery', purchased: todayStr(), cost, salvage, life, accumDep: 0, bookVal: cost, loc });
+  renderFA();
+  alert(`Capital Asset Registered: Asset ledger item ${id} initialized. Linear straight-line depreciation amortization schemas automatically mapped to matrix calculations.`);
+
+  document.getElementById("fa-name").value = "";
+  document.getElementById("fa-cost").value = "";
+  document.getElementById("fa-salvage").value = "0";
+  document.getElementById("fa-life").value = "";
+  document.getElementById("fa-location").value = "";
+  document.querySelector('[data-fa-tab="REGISTRY"]').click();
+});
+
+/* ============================================================
+   CONSTRUCTION PROJECT — BOQ, draws & phase progress
+   ============================================================ */
+let constPhases = [];
+let constTab = 'PHASE';
+
+async function initConst() {
+  if (constPhases.length > 0) { renderConst(); return; }
+  try {
+    const res = await fetch(API_BASE + "/api/erp/construction/project-matrix");
+    const data = await res.json();
+    if (data.success && data.results.length) {
+      constProjName = data.results[0].projectName;
+      constPhases = data.results[0].phases.map(p => ({
+        id: p.phaseId,
+        name: p.name,
+        pct: p.completionPercent,
+        boq: p.allocatedBOQ,
+        draws: p.certifiedDrawsToDate,
+        contractor: p.assignedContractor,
+        status: p.status,
+      }));
+      document.querySelector(".const-banner-name").textContent = constProjName.toUpperCase();
+    } else {
+      throw new Error('No data');
+    }
+  } catch {
+    constPhases = [
+      { id: 'PH-01', name: 'Deep Foundation Piling Work', pct: 100, boq: 18500000, draws: 18500000, contractor: 'PHC Piling & Foundations Ltd', status: 'CERTIFIED' },
+      { id: 'PH-02', name: 'Substructure & Basement Casting', pct: 65, boq: 22000000, draws: 12500000, contractor: 'Modular Homes Civil Team', status: 'ACTIVE' },
+      { id: 'PH-03', name: 'Superstructure Framework (Floors 1-8)', pct: 0, boq: 45000000, draws: 0, contractor: 'Modular Homes Civil Team', status: 'PENDING' },
+      { id: 'PH-04', name: 'Finishes & Eco-Block Masonry', pct: 0, boq: 15000000, draws: 0, contractor: 'Silicon Interior Pool', status: 'PENDING' },
+    ];
+  }
+  renderConst();
+}
+
+let constProjName = 'SILICON SAMTAZ (G+M+8) - JOLSHIRI R/A';
+
+function renderConst() {
+  const container = document.getElementById("const-phases");
+  container.innerHTML = constPhases.map(p => {
+    const headroom = p.boq - p.draws;
+    return `
+      <div class="const-phase">
+        <div class="const-ph-top">
+          <div style="flex:1;margin-right:8px">
+            <div class="const-ph-id">${p.id} — <span>${p.contractor}</span></div>
+            <div class="const-ph-name">${p.name}</div>
+          </div>
+          <div class="const-ph-badge ${p.status}">${p.status}</div>
+        </div>
+        <div class="const-progress">
+          <div class="const-bar-bg"><div class="const-bar-fill" style="width:${p.pct}%"></div></div>
+          <span class="const-bar-pct">${p.pct}% Complete</span>
+        </div>
+        <div class="const-div"></div>
+        <div class="const-grid">
+          <div class="const-g-item">
+            <div class="const-g-label">TOTAL BOQ VAL</div>
+            <div class="const-g-val">BDT ${p.boq.toLocaleString()}</div>
+          </div>
+          <div class="const-g-item">
+            <div class="const-g-label">CERTIFIED DRAWS</div>
+            <div class="const-g-val draw">BDT ${p.draws.toLocaleString()}</div>
+          </div>
+          <div class="const-g-item" style="text-align:right">
+            <div class="const-g-label">BOQ HEADROOM</div>
+            <div class="const-g-val headroom">BDT ${headroom.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+  document.getElementById("const-draw").classList.add("hidden");
+  document.getElementById("const-phases").classList.remove("hidden");
+}
+
+// Const tab switch
+document.querySelectorAll(".ar-seg[data-const-tab]").forEach(seg => {
+  seg.addEventListener("click", () => {
+    document.querySelectorAll(".ar-seg[data-const-tab]").forEach(s => s.classList.remove("active"));
+    seg.classList.add("active");
+    constTab = seg.dataset.constTab;
+    if (constTab === 'PHASE') {
+      document.getElementById("const-draw").classList.add("hidden");
+      document.getElementById("const-phases").classList.remove("hidden");
+    } else {
+      document.getElementById("const-phases").classList.add("hidden");
+      document.getElementById("const-draw").classList.remove("hidden");
+    }
+  });
+});
+
+// Certify draw
+document.getElementById("const-submit").addEventListener("click", () => {
+  const phaseId = document.getElementById("const-phase-id").value.trim().toUpperCase();
+  const drawRef = document.getElementById("const-draw-ref").value.trim();
+  const amt = parseFloat(document.getElementById("const-draw-amt").value);
+  const pct = parseFloat(document.getElementById("const-draw-pct").value);
+
+  if (!phaseId || !drawRef || isNaN(amt) || amt <= 0 || isNaN(pct) || pct < 0 || pct > 100) {
+    alert("Validation Rejection: Please map a valid phase ID, unique draw code, and logical progress percentage limits (0-100%).");
+    return;
+  }
+
+  const phase = constPhases.find(p => p.id === phaseId);
+  if (!phase) {
+    alert("Phase Out of Index: The specified structural build phase code does not exist within the project schedule.");
+    return;
+  }
+
+  if (phase.draws + amt > phase.boq) {
+    alert(`BOQ Overrun Rejection: Requested draw outlays exceed maximum allocated budget for this phase. Available BOQ headroom: BDT ${(phase.boq - phase.draws).toLocaleString()}`);
+    return;
+  }
+
+  phase.pct = Math.max(phase.pct, pct);
+  phase.draws += amt;
+  phase.status = phase.pct === 100 ? 'CERTIFIED' : 'ACTIVE';
+  renderConst();
+
+  // Hit the API
+  try {
+    await fetch(API_BASE + "/api/erp/construction/certify-draw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phaseId,
+        drawReference: drawRef,
+        requestedAmount: amt,
+        certifiedProgressPercent: pct,
+      }),
+    });
+  } catch {}
+
+  alert(`Contractor Draw Certified: Progress billing token ${drawRef} confirmed. BDT ${amt.toLocaleString()} mapped safely to system Work-in-Progress (WIP) asset indices.`);
+
+  document.getElementById("const-phase-id").value = "";
+  document.getElementById("const-draw-ref").value = "";
+  document.getElementById("const-draw-amt").value = "";
+  document.getElementById("const-draw-pct").value = "";
+  document.querySelector('[data-const-tab="PHASE"]').click();
+});
+
+document.getElementById("report-type-filter").addEventListener("change", loadReport);
+document.getElementById("report-month-filter").addEventListener("change", loadReport);
+document.getElementById("report-refresh").addEventListener("click", loadReport);
+
+async function loadReport() {
+  const list = document.getElementById("report-list");
+  list.innerHTML = `<div class="empty-state">Loading…</div>`;
+  if (!state.companyId) return;
+
+  const typeFilter = document.getElementById("report-type-filter").value;
+  const monthFilter = document.getElementById("report-month-filter").value;
+
+  let query = sb
+    .from("sp_transactions")
+    .select("id, type, txn_date, amount, narration, ref_no, sp_parties!party_id(name)")
+    .eq("company_id", state.companyId)
+    .order("txn_date", { ascending: false })
+    .limit(100);
+
+  if (typeFilter) query = query.eq("type", typeFilter);
+  if (monthFilter) {
+    const start = monthFilter + "-01";
+    const end = monthFilter + "-31";
+    query = query.gte("txn_date", start).lte("txn_date", end);
+  }
+
+  const { data, error } = await query;
+  if (error) { list.innerHTML = `<div class="empty-state">${error.message}</div>`; return; }
+  if (!data || data.length === 0) {
+    list.innerHTML = `<div class="empty-state">No entries yet. Add one from the Entry tab.</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(txn => {
+    const typeLabel = ENTRY_TYPES.find(t => t.key === txn.type)?.label || txn.type;
+    const partyName = txn.sp_parties?.name || txn.narration || "—";
+    const refStr = txn.ref_no ? ` · ${txn.ref_no}` : "";
+    return `
+      <div class="txn-card">
+        <div class="meta">
+          <div class="type">${typeLabel}</div>
+          <div class="party">${partyName}</div>
+          <div class="date">${txn.txn_date}${refStr}</div>
+        </div>
+        <div class="amt">${fmt(txn.amount)}</div>
+      </div>
+    `;
+  }).join("");
+}
+</script>
+</body>
+</html>

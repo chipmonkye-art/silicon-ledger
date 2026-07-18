@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Silicon AppAcc – Company Setup</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--primary:#C4001A;--primary-rgb:196,0,26}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:#0A0F18; color:#fff; min-height:100dvh;
+  display:flex; flex-direction:column; align-items:center;
+}
+.container{width:100%;max-width:480px;padding:0 24px;flex:1;display:flex;flex-direction:column}
+
+/* Header */
+.wiz-header{margin-top:30px;width:100%}
+.wiz-step{color:var(--primary);font-size:9px;font-weight:800;letter-spacing:1.5px;margin-bottom:6px}
+.wiz-title{font-size:24px;font-weight:900;letter-spacing:1px;color:#fff}
+.wiz-sub{font-size:13px;color:#64748B;margin-top:4px}
+.wiz-line{width:35px;height:3px;background:var(--primary);margin-top:16px}
+.wiz-dots{display:flex;gap:8px;margin-top:20px}
+.wiz-dot{width:8px;height:8px;border-radius:50%;background:#1E293B;transition:all .3s}
+.wiz-dot.active{background:var(--primary);width:28px;border-radius:4px}
+.wiz-dot.done{background:rgba(var(--primary-rgb),.4)}
+
+/* Steps */
+.step{display:none;flex-direction:column;gap:24px;animation:fadeIn .25s;width:100%;padding:32px 0 0}
+.step.active{display:flex}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Fields */
+.field{display:flex;flex-direction:column;gap:8px}
+.field label{color:#94A3B8;font-size:10px;font-weight:700;letter-spacing:1px}
+.field .hint{color:#475569;font-size:11px;margin-top:2px}
+.field input,.field select{
+  background:#111827;border:1px solid #1E293B;border-radius:4px;height:52px;
+  padding:0 16px;color:#fff;font-size:15px;font-weight:600;outline:none;font-family:inherit;
+  transition:border-color .15s;
+}
+.field input:focus,.field select:focus{border-color:var(--primary)}
+.field input::placeholder{color:#475569}
+.field select option{background:#111827;color:#fff}
+
+/* Toggle row */
+.toggle-row{display:flex;gap:10px}
+.toggle-btn{
+  flex:1;height:48px;border:1px solid #1E293B;border-radius:4px;
+  background:#111827;color:#64748B;font-size:11px;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;font-family:inherit;
+  transition:all .15s;
+}
+.toggle-btn.active{border-color:var(--primary);background:rgba(var(--primary-rgb),.05);color:var(--primary)}
+
+/* Currency row */
+.currency-row{display:flex;gap:10px}
+.currency-row .field:first-child{width:28%}
+.currency-row .field:last-child{width:68%}
+
+/* Textarea */
+.field textarea{
+  background:#111827;border:1px solid #1E293B;border-radius:4px;min-height:80px;
+  padding:12px 16px;color:#fff;font-size:14px;font-weight:600;outline:none;
+  font-family:inherit;line-height:20px;resize:vertical;transition:border-color .15s;
+}
+.field textarea:focus{border-color:var(--primary)}
+.field textarea::placeholder{color:#475569}
+
+/* Template cards */
+.section-label{color:#475569;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:16px}
+.template-card{
+  background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;margin-bottom:16px;cursor:pointer;
+  transition:border-color .15s;
+}
+.template-card.active{border-color:var(--primary);background:rgba(var(--primary-rgb),.02)}
+.template-card:active{border-color:var(--primary)}
+.template-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.template-card-title{color:#fff;font-size:13px;font-weight:800;letter-spacing:.5px}
+.template-card-desc{color:#64748B;font-size:12px;line-height:18px}
+.radio-dot{
+  width:14px;height:14px;border-radius:50%;border:1.5px solid #475569;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.radio-dot.active{border-color:var(--primary);background:var(--primary)}
+.checkbox-row{
+  display:flex;align-items:flex-start;gap:14px;
+  background:#111827;border:1px solid #1E293B;border-radius:4px;padding:16px;cursor:pointer;
+}
+.checkbox-box{
+  width:18px;height:18px;border:1.5px solid #475569;border-radius:3px;flex-shrink:0;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;
+}
+.checkbox-box.checked{border-color:var(--primary)}
+.checkbox-box.checked::after{content:"";width:10px;height:10px;background:var(--primary);border-radius:1px}
+.checkbox-title{color:#E2E8F0;font-size:13px;font-weight:700}
+.checkbox-sub{color:#64748B;font-size:11px;margin-top:2px;line-height:16px}
+
+/* Footer */
+.wiz-footer{padding:24px 0;margin-top:auto}
+.wiz-footer-row{display:flex;gap:10px}
+.wiz-next{
+  flex:1;height:54px;border:none;border-radius:4px;
+  background:var(--primary);color:#fff;font-size:13px;font-weight:800;
+  letter-spacing:1px;cursor:pointer;font-family:inherit;
+  box-shadow:0 4px 14px rgba(var(--primary-rgb),.2);
+  transition:opacity .15s;
+}
+.wiz-next:active{opacity:.85}
+.wiz-next:disabled{background:#7F1D1D;opacity:.6;cursor:default}
+.wiz-back-btn{
+  width:28%;height:54px;border:1px solid #1E293B;border-radius:4px;
+  background:#111827;color:#64748B;font-size:13px;font-weight:700;
+  letter-spacing:1px;cursor:pointer;font-family:inherit;
+}
+.wiz-back{
+  background:none;border:none;color:#475569;font-size:11px;font-weight:700;
+  letter-spacing:.5px;cursor:pointer;font-family:inherit;padding:12px 0;width:100%;
+}
+.wiz-error{color:var(--primary);font-size:12px;text-align:center;min-height:16px;font-weight:600;}
+.wiz-success{color:#4a9a6d;font-size:12px;text-align:center;min-height:16px;font-weight:600;}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;flex:1}
+.loading .spinner{
+  width:24px;height:24px;border:2px solid #475569;border-top-color:var(--primary);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading .txt{color:#475569;font-size:10px;font-family:monospace;letter-spacing:1px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="container" id="app">
+  <div class="loading" id="loading-ui">
+    <div class="spinner"></div>
+    <div class="txt">AUTHENTICATING TENANT SESSION...</div>
+  </div>
+
+  <div id="wizard-ui" class="hidden">
+    <div class="wiz-header">
+      <div class="wiz-step" id="wiz-step-label">STEP 1 OF 3</div>
+      <div class="wiz-title" id="wiz-title">COMPANY STRUCTURING</div>
+      <div class="wiz-sub" id="wiz-sub">Establish legal ledger identity and workspace rules</div>
+      <div class="wiz-line"></div>
+      <div class="wiz-dots" id="wiz-dots"></div>
+    </div>
+
+    <!-- STEP 1 — Company Structuring -->
+    <div class="step active" data-step="1">
+      <div class="field">
+        <label>LEGAL ENTITY REGISTERED NAME</label>
+        <input type="text" id="f-name" placeholder="e.g., Silicon Properties" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>WORKSPACE STRUCTURAL LAYOUT</label>
+        <div class="toggle-row">
+          <button class="toggle-btn active" data-value="STANDARD" id="type-standard">STANDARD WORKSPACE</button>
+          <button class="toggle-btn" data-value="GROUP" id="type-group">CONSOLIDATED GROUP</button>
+        </div>
+      </div>
+      <div class="field" id="parent-field">
+        <label>PARENT GROUP ID (OPTIONAL CONSOLIDATION LINK)</label>
+        <input type="text" id="f-parent" placeholder="Leave empty if standalone corporation" autocomplete="off" />
+        <div class="hint">Link to an existing group company UUID for consolidated reporting</div>
+      </div>
+      <div class="currency-row">
+        <div class="field">
+          <label>BASE SYMBOL</label>
+          <input type="text" id="f-currency-symbol" value="৳" maxlength="5" style="text-align:center" />
+        </div>
+        <div class="field">
+          <label>FORMAL CURRENCY NAME</label>
+          <input type="text" id="f-currency-code" value="BDT" maxlength="10" />
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 — Temporal & Spatial Bounds -->
+    <div class="step" data-step="2">
+      <div class="field">
+        <label>REGISTERED HQ CORPORATE ADDRESS</label>
+        <textarea id="f-hq-addr" rows="3" placeholder="Enter formal registered legal address..."></textarea>
+      </div>
+      <div class="field">
+        <label>PRIMARY OPERATIONS / PROJECT DEPLOYMENT SITE</label>
+        <textarea id="f-ops-addr" rows="3" placeholder="e.g., Development Site Location or Branch Site..."></textarea>
+      </div>
+      <div class="currency-row">
+        <div class="field" style="width:48%">
+          <label>FISCAL YEAR START</label>
+          <input type="date" id="f-fy-start" value="2026-04-01" />
+        </div>
+        <div class="field" style="width:48%">
+          <label>FISCAL YEAR END</label>
+          <input type="date" id="f-fy-end" value="2027-03-31" />
+        </div>
+      </div>
+      <div class="field">
+        <label>CORPORATE TAX IDENTIFIER / BIN / TIN</label>
+        <input type="text" id="f-tax-id" placeholder="e.g., BIN-001234567-0401" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- STEP 3 — Ledger Blueprint -->
+    <div class="step" data-step="3">
+      <div class="section-label">CHOOSE CHART OF ACCOUNTS ARCHETYPE</div>
+
+      <div class="template-card active" data-template="REAL_ESTATE_SPECIALIZED">
+        <div class="template-card-top">
+          <div class="template-card-title">REAL ESTATE & DEVELOPMENT PRESET</div>
+          <div class="radio-dot active"></div>
+        </div>
+        <div class="template-card-desc">Includes deep account structures tailored for Land Banks, Project Cost Centers, Construction BOQ accounts, and Contractor Billing ledgers.</div>
+      </div>
+
+      <div class="template-card" data-template="STANDARD_ERP">
+        <div class="template-card-top">
+          <div class="template-card-title">STANDARD COMMERCIAL TRADING PRESETS</div>
+          <div class="radio-dot"></div>
+        </div>
+        <div class="template-card-desc">Standard financial frameworks optimized for wholesale, inventory tracking, basic payroll distributions, and generalized AP/AR pipelines.</div>
+      </div>
+
+      <div class="template-card" data-template="MINIMAL_EMPTY">
+        <div class="template-card-top">
+          <div class="template-card-title">BLANK ACCOUNT SCHEMATIC</div>
+          <div class="radio-dot"></div>
+        </div>
+        <div class="template-card-desc">Zero presets. Recommended only if you plan to import custom JSON account schemes or migrate a legacy system cleanly.</div>
+      </div>
+
+      <div class="section-label" style="margin-top:12px">ADDITIONAL ARTIFACTS</div>
+
+      <div class="checkbox-row" id="seed-checkbox">
+        <div class="checkbox-box" id="seed-box"></div>
+        <div>
+          <div class="checkbox-title">Seed Mock Transactions</div>
+          <div class="checkbox-sub">Populates test balance data for analytics testing before going live.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wiz-error" id="wiz-error"></div>
+    <div class="wiz-success" id="wiz-success"></div>
+
+    <div class="wiz-footer">
+      <div class="wiz-footer-row" id="wiz-next-row">
+        <button class="wiz-next" id="wiz-next">SAVE & CONTINUE TO PARAMS</button>
+      </div>
+      <div class="wiz-footer-row hidden" id="wiz-back-row">
+        <button class="wiz-back-btn" id="wiz-back-btn">BACK</button>
+        <button class="wiz-next" id="wiz-next2">SAVE & DEFINE ENGINE</button>
+      </div>
+      <div class="wiz-footer-row hidden" id="wiz-provision-row">
+        <button class="wiz-back-btn" id="wiz-back-btn3">BACK</button>
+        <button class="wiz-next" id="wiz-next3">EXECUTE PROVISIONING CRON</button>
+      </div>
+      <button class="wiz-back hidden" id="wiz-back">← RETURN TO PREVIOUS STEP</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = "https://vbnifgchhlltdgdpinom.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZibmlmZ2NoaGxsdGRnZHBpbm9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMDM3NDcsImV4cCI6MjA5OTU3OTc0N30.d-i1hAyaPyyiCwOcRTaJWF3mpcU4AyWQ-AqsNkizSo8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentStep = 1;
+const totalSteps = 3;
+let session = null;
+
+const wizardData = {
+  userId: null,
+  name: "",
+  type: "STANDARD",
+  parentGroupId: null,
+  baseCurrencySymbol: "৳",
+  formalCurrencyName: "BDT",
+  registeredOffice: "",
+  operationalSite: "",
+  fiscalYearStart: "2026-04-01",
+  fiscalYearEnd: "2027-03-31",
+  taxId: "",
+  coaTemplate: "REAL_ESTATE_SPECIALIZED",
+  includeDemoLedgers: false,
+  addresses: [],
+  featureFlags: {},
+};
+
+const wizTitle = document.getElementById("wiz-title");
+const wizSub = document.getElementById("wiz-sub");
+const wizStepLabel = document.getElementById("wiz-step-label");
+const wizDots = document.getElementById("wiz-dots");
+const wizError = document.getElementById("wiz-error");
+const wizNext = document.getElementById("wiz-next");
+const wizNext2 = document.getElementById("wiz-next2");
+const wizNext3 = document.getElementById("wiz-next3");
+const wizBack = document.getElementById("wiz-back");
+const wizBackBtn = document.getElementById("wiz-back-btn");
+const wizNextRow = document.getElementById("wiz-next-row");
+const wizBackRow = document.getElementById("wiz-back-row");
+const wizProvisionRow = document.getElementById("wiz-provision-row");
+const wizBackBtn3 = document.getElementById("wiz-back-btn3");
+
+const stepHeadings = {
+  1: { title: "COMPANY STRUCTURING", sub: "Establish legal ledger identity and workspace rules" },
+  2: { title: "TEMPORAL & SPATIAL BOUNDS", sub: "Define physical footprint and operational periods" },
+  3: { title: "LEDGER BLUEPRINT", sub: "Configure initialization parameters for the Chart of Accounts (CoA)" },
+};
+
+function renderDots() {
+  wizDots.innerHTML = Array.from({ length: totalSteps }, (_, i) =>
+    `<div class="wiz-dot${i + 1 === currentStep ? " active" : i + 1 < currentStep ? " done" : ""}"></div>`
+  ).join("");
+  wizStepLabel.textContent = `STEP ${currentStep} OF ${totalSteps}`;
+  const h = stepHeadings[currentStep] || stepHeadings[1];
+  wizTitle.textContent = h.title;
+  wizSub.textContent = h.sub;
+}
+
+function showStep(n) {
+  currentStep = n;
+  document.querySelectorAll(".step").forEach(el => el.classList.remove("active"));
+  document.querySelector(`[data-step="${n}"]`).classList.add("active");
+  wizNextRow.classList.toggle("hidden", n !== 1);
+  wizBackRow.classList.toggle("hidden", n !== 2);
+  wizProvisionRow.classList.toggle("hidden", n !== 3);
+  wizBack.classList.toggle("hidden", n === 1);
+  renderDots();
+  wizError.textContent = "";
+}
+
+function showError(msg) { wizError.textContent = msg; }
+
+// Toggle buttons for workspace type
+const typeBtns = document.querySelectorAll(".toggle-btn");
+typeBtns.forEach(btn => {
+  btn.addEventListener("click", () => {
+    typeBtns.forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    wizardData.type = btn.dataset.value;
+    document.getElementById("parent-field").classList.toggle("hidden", btn.dataset.value !== "STANDARD");
+  });
+});
+
+// Collect Step 1 data
+function collectStep1() {
+  wizardData.name = document.getElementById("f-name").value.trim();
+  wizardData.type = document.querySelector(".toggle-btn.active")?.dataset.value || "STANDARD";
+  wizardData.parentGroupId = document.getElementById("f-parent").value.trim() || null;
+  wizardData.baseCurrencySymbol = document.getElementById("f-currency-symbol").value.trim();
+  wizardData.formalCurrencyName = document.getElementById("f-currency-code").value.trim().toUpperCase();
+
+  if (!wizardData.name) { showError("Legal entity name is required"); return false; }
+  if (!wizardData.baseCurrencySymbol) { showError("Base currency symbol is required"); return false; }
+  if (wizardData.formalCurrencyName.length < 2) { showError("Formal currency name is required"); return false; }
+  return true;
+}
+
+// Collect Step 2 data
+function collectStep2() {
+  wizardData.registeredOffice = document.getElementById("f-hq-addr").value.trim();
+  wizardData.operationalSite = document.getElementById("f-ops-addr").value.trim() || wizardData.registeredOffice;
+  wizardData.fiscalYearStart = document.getElementById("f-fy-start").value;
+  wizardData.fiscalYearEnd = document.getElementById("f-fy-end").value;
+  wizardData.taxId = document.getElementById("f-tax-id").value.trim();
+
+  if (!wizardData.registeredOffice) { showError("Registered legal head office address is required"); return false; }
+  if (!wizardData.fiscalYearStart || !wizardData.fiscalYearEnd) { showError("Fiscal year dates are required"); return false; }
+  if (new Date(wizardData.fiscalYearStart) >= new Date(wizardData.fiscalYearEnd)) {
+    showError("Fiscal year start must be before end"); return false;
+  }
+  return true;
+}
+
+// Template card selection
+const templateCards = document.querySelectorAll(".template-card");
+templateCards.forEach(card => {
+  card.addEventListener("click", () => {
+    templateCards.forEach(c => {
+      c.classList.remove("active");
+      c.querySelector(".radio-dot").classList.remove("active");
+    });
+    card.classList.add("active");
+    card.querySelector(".radio-dot").classList.add("active");
+    wizardData.coaTemplate = card.dataset.template;
+  });
+});
+
+// Seed checkbox
+const seedCheckbox = document.getElementById("seed-checkbox");
+const seedBox = document.getElementById("seed-box");
+seedCheckbox.addEventListener("click", () => {
+  wizardData.includeDemoLedgers = !wizardData.includeDemoLedgers;
+  seedBox.classList.toggle("checked", wizardData.includeDemoLedgers);
+});
+
+// Navigate
+wizNext.addEventListener("click", () => {
+  wizError.textContent = "";
+  if (currentStep === 1 && !collectStep1()) return;
+  if (currentStep < totalSteps) showStep(currentStep + 1);
+});
+
+wizNext2.addEventListener("click", () => {
+  wizError.textContent = "";
+  if (currentStep === 2 && !collectStep2()) return;
+  if (currentStep < totalSteps) showStep(currentStep + 1);
+  else submitWizard();
+});
+
+wizNext3.addEventListener("click", () => {
+  wizError.textContent = "";
+  submitWizard();
+});
+
+wizBackBtn.addEventListener("click", () => { if (currentStep > 1) showStep(currentStep - 1); });
+wizBackBtn3.addEventListener("click", () => { if (currentStep > 1) showStep(currentStep - 1); });
+wizBack.addEventListener("click", () => { if (currentStep > 1) showStep(currentStep - 1); });
+
+// Submit
+async function submitWizard() {
+  const btn = document.getElementById("wiz-next3");
+  btn.disabled = true;
+  btn.textContent = "PROVISIONING...";
+  try {
+    const payload = {
+      userId: wizardData.userId,
+      name: wizardData.name,
+      type: wizardData.type,
+      parentGroupId: wizardData.parentGroupId,
+      baseCurrencySymbol: wizardData.baseCurrencySymbol,
+      formalCurrencyName: wizardData.formalCurrencyName,
+      registeredOffice: wizardData.registeredOffice,
+      operationalSite: wizardData.operationalSite,
+      financialYearStart: wizardData.fiscalYearStart,
+      financialYearEnd: wizardData.fiscalYearEnd,
+      taxId: wizardData.taxId,
+      coaTemplate: wizardData.coaTemplate,
+      provisionDemoData: wizardData.includeDemoLedgers,
+      booksBeginningFrom: wizardData.fiscalYearStart,
+      addresses: [],
+      isEditLogEnabled: true,
+      isVaultEncrypted: false,
+      isInventoryEnabled: true,
+      isPayrollEnabled: false,
+    };
+
+const API_BASE = window.__API_BASE || (location.origin === "file://" ? "http://localhost:3000" : location.origin);
+
+    const res = await fetch(API_BASE + "/api/v2/companies/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    let result;
+    try {
+      result = await res.json();
+    } catch {
+      throw new Error(`API returned ${res.status} — the backend server may not be running.`);
+    }
+    if (!res.ok) throw new Error(result.error || "Server error");
+
+    btn.textContent = "✓ DONE";
+    btn.onclick = () => { window.location.href = "/"; };
+    document.getElementById("wiz-success").textContent = `${result.company.name} created successfully. Redirecting...`;
+    setTimeout(() => { window.location.href = "/"; }, 2000);
+  } catch (err) {
+    showError(err.message);
+    btn.disabled = false;
+    btn.textContent = "EXECUTE PROVISIONING CRON";
+  }
+}
+
+// Init
+(async () => {
+  try {
+    const { data: { session: s } } = await sb.auth.getSession();
+    if (!s) { window.location.href = "/"; return; }
+    session = s;
+    wizardData.userId = s.user.id;
+    document.getElementById("loading-ui").classList.add("hidden");
+    document.getElementById("wizard-ui").classList.remove("hidden");
+    showStep(1);
+  } catch (err) {
+    document.querySelector(".loading .txt").textContent = "SESSION ERROR: " + err.message;
+  }
+})();
+</script>
+</body>
+</html>

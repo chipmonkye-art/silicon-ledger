@@ -7,3 +7,7 @@ uploads/
 extracd/
 jolshiri/
 *.mbox
+
+# Test coverage
+coverage/
+.vercel

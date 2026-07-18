@@ -127,4 +127,5 @@ export interface Expense {
   status: "draft" | "pending" | "approved" | "rejected" | "paid";
   approved_by?: string;
   created_by: string;
+  created_at: string;
 }

@@ -195,7 +195,7 @@ function AddRecurringForm({
       amount: amountCents,
       account_id: accountId,
       to_account_id: type === "transfer" ? toAccountId : undefined,
-      interval_type: intervalType,
+      interval_type: intervalType as "daily" | "weekly" | "monthly" | "yearly" | "custom_weeks",
       interval_value: parseInt(intervalValue),
       next_occurrence: nextDate,
     });

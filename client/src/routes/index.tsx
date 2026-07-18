@@ -131,7 +131,7 @@ const routeTree = rootRoute.addChildren([
   authLayout.addChildren([dashboardRoute, projectsRoute, projectDetailRoute, transactionsRoute, searchRoute, expensesRoute, accountsRoute, calendarRoute, invoicesRoute, vendorsRoute, reportsRoute, recurringRoute, reviewRoute, backupRoute]),
 ]);
 
-const router = createRouter({ routeTree });
+const router = createRouter({ routeTree, basepath: "/ota" });
 
 declare module "@tanstack/react-router" {
   interface Register {
